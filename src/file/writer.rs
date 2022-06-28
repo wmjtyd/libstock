@@ -1,3 +1,6 @@
+//! The writer daemon to write data and place file automatically
+//! without worrying about managing the path.
+
 use std::{sync::{atomic::AtomicBool, Arc}, path::PathBuf};
 
 use concat_string::concat_string;
