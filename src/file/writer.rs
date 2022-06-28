@@ -1,13 +1,12 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use concat_string::concat_string;
 use flume::{Sender, Receiver};
 use tokio::{task::JoinHandle, fs::OpenOptions};
 
 use crate::flag::BinaryFlag;
 
-use super::{datadir::{get_path_to_write, get_data_directory}, timestamp::get_timestamp};
+use super::{datadir::{get_ident_path, get_data_directory}, timestamp::get_timestamp, ident::get_ident};
 
 /// A data entry to send to a [`DataWriter`].
 pub struct DataEntry {
@@ -61,11 +60,10 @@ impl DataWriter {
                             .map_err(WriteError::RecvDataFailed)?;
                     
                     // Get the timestamp, and get the identifier.
-                    let timestamp = get_timestamp();
-                    let identifier = concat_string!(filename, timestamp);
+                    let identifier = get_ident(&filename, &get_timestamp());
 
                     // Write file to the specified path.
-                    let path_to_write = get_path_to_write(&identifier);
+                    let path_to_write = get_ident_path(&identifier);
                     write_content(path_to_write, data.as_slice()).await?;
 
                     Ok::<(), WriteError>(())

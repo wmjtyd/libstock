@@ -12,7 +12,7 @@ pub fn get_data_directory() -> PathBuf {
 }
 
 /// Get the exact filename to write to.
-pub fn get_path_to_write(identifier: &str) -> PathBuf {
+pub fn get_ident_path(identifier: &str) -> PathBuf {
     let mut path = get_data_directory();
     path.push(concat_string!(identifier, ".csv"));
 
