@@ -1,9 +1,8 @@
-use std::{sync::atomic::AtomicBool, path::{PathBuf}};
+use std::{sync::atomic::AtomicBool, path::PathBuf};
 
 use concat_string::concat_string;
 use flume::{Sender, Receiver};
-use scc::HashMap;
-use tokio::{task::JoinHandle, fs::{File, OpenOptions}};
+use tokio::{task::JoinHandle, fs::OpenOptions};
 
 /// A data entry to send to a [`DataWriter`].
 pub struct DataEntry {
@@ -19,7 +18,6 @@ pub struct DataWriter {
     run_flag: RunningFlag,
     sender: Sender<DataEntry>,
     receiver: Receiver<DataEntry>,
-    files: HashMap<String, File>,
 }
 
 impl RunningFlag {
@@ -58,85 +56,35 @@ impl DataWriter {
 
         tokio::task::spawn(async {
             loop {
-            if !self.run_flag.is_running() {
-                break;
-            }
+                if !self.run_flag.is_running() {
+                    break;
+                }
 
-            let timestamp = get_timestamp();
-            let DataEntry { filename, data } = 
-                match self.receiver.recv_async().await {
-                    Ok(data_entry) => data_entry,
-                    Err(e) => {
-                        tracing::error!("error receiving data entry: {e}. skipping.");
-                        continue;
-                    }
+                let task = async move {
+                    // Get the data entry.
+                    let DataEntry { filename, data } = 
+                        self.receiver
+                            .recv_async()
+                            .await
+                            .map_err(WriteError::RecvDataFailed)?;
+                    
+                    // Get the timestamp, and get the identifier.
+                    let timestamp = get_timestamp();
+                    let identifier = concat_string!(filename, timestamp);
+
+                    // Write file to the specified path.
+                    let path_to_write = get_path_to_write(&identifier);
+                    write_content(path_to_write, data.as_slice()).await?;
+
+                    Ok::<(), WriteError>(())
                 };
 
-            let identifier = concat_string!(filename, timestamp);
-            let file_info = self.files.read_async(&identifier, |_, &v| v).await;
-    
-            match file_info {
-                // No such a file!
-                None => {
-                    let path_to_write = get_path_to_write(&identifier);
-                    let result = write_content(path_to_write, data.as_slice()).await;
-
-                    if let Err(e) = result {
-                        tracing::error!("{e}. skipping.");
-                        continue;
-                    }
+                if let Err(e) = task.await {
+                    tracing::error!("Error happened: {e}; skipping.");
+                    continue;
                 }
             }
-
-            match files_lock.get(&format!("{}_{}", filename, local_time)) {
-                None => {
-
-                    let filename_orderbook = check_path(filename.to_string());
-                    let data_file = OpenOptions::new()
-                        .append(true)
-                        .open(filename_orderbook)
-                        .expect("文件无法打开");
-
-                    write_file(&data_file, data);
-                    files_lock.insert(today, data_file);
-
-                    let yesterday = (local_time - Duration::seconds(86400)).format("%Y%m%d");
-                    let key = &format!("{}_{}", filename, yesterday);
-                    if files_lock.contains_key(key) {
-                        files_lock.remove(key);
-                    }
-                }
-                Some(file) => {
-                    write_file(file, data);
-                }
-            }
-        }
         })
-    }
-
-    async fn loop_task(&mut self) -> WriteResult<()> {
-        let timestamp = get_timestamp();
-        let DataEntry { filename, data } = 
-            self.receiver
-                .recv_async()
-                .await
-                .map_err(WriteError::RecvDataFailed)?;
-
-        let identifier = concat_string!(filename, timestamp);
-        let file_info = self.files.read_async(
-            &identifier,
-            |_, &v| v.clone()
-        ).await;
-
-        match file_info {
-            // No such a file!
-            None => {
-                let path_to_write = get_path_to_write(&identifier);
-                let result = write_content(path_to_write, data.as_slice()).await?;
-            }
-        }
-
-        todo!()
     }
 }
 
@@ -206,28 +154,6 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
         .map_err(|e| WriteError::DataWriteFailed(e))?;
 
     Ok(())
-}
-
-// 可优化
-pub fn write_file(mut file: &File, data: Vec<i8>) {
-    let data_len = &(data.len() as i16).to_be_bytes();
-    file.write_all(data_len).expect("长度计算失败");
-    for i in data {
-        file.write_all(&[i as u8]).expect("");
-    }
-}
-
-pub fn check_path(filename: String) -> String {
-    let local_time = Local::now().format("%Y%m%d").to_string();
-    let path = &format!("./record/{}/", local_time);
-    create_dir_all(path).expect("目录创建失败");
-
-    let path_filename = format!("{}{}.csv", path, filename);
-    println!("{}", path_filename);
-    if !Path::new(&path_filename).is_file() {
-        File::create(&path_filename).expect("创建文件失败");
-    }
-    path_filename
 }
 
 #[derive(Debug, thiserror::Error)]
