@@ -1,11 +1,13 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use std::{sync::{atomic::AtomicBool, Arc}, path::PathBuf};
-
 use concat_string::concat_string;
 use flume::{Sender, Receiver};
 use tokio::{task::JoinHandle, fs::OpenOptions};
+
+use crate::flag::BinaryFlag;
+
+use super::{datadir::{get_path_to_write, get_data_directory}, timestamp::get_timestamp};
 
 /// A data entry to send to a [`DataWriter`].
 pub struct DataEntry {
@@ -15,29 +17,10 @@ pub struct DataEntry {
     pub data: Vec<u8>,
 }
 
-#[derive(Clone)]
-pub struct RunningFlag(Arc<AtomicBool>);
-
 pub struct DataWriter {
-    run_flag: RunningFlag,
+    run_flag: BinaryFlag,
     sender: Sender<DataEntry>,
     receiver: Receiver<DataEntry>,
-}
-
-impl RunningFlag {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Should we continue running?
-    pub fn is_running(&self) -> bool {
-        self.0.load(std::sync::atomic::Ordering::SeqCst)
-    }
-
-    /// Set the running flag.
-    pub fn set_running(&self, value: bool) {
-        self.0.store(value, std::sync::atomic::Ordering::SeqCst)
-    }
 }
 
 impl DataWriter {
@@ -97,12 +80,6 @@ impl DataWriter {
     }
 }
 
-impl Default for RunningFlag {
-    fn default() -> Self {
-        Self(Arc::new(AtomicBool::new(true)))
-    }
-}
-
 impl Default for DataWriter {
     fn default() -> Self {
         let (sender, receiver) = flume::unbounded();
@@ -110,35 +87,9 @@ impl Default for DataWriter {
         Self {
             sender,
             receiver,
-            run_flag: RunningFlag::default(),
+            run_flag: Default::default(),
         }
     }
-}
-
-/// Get a timestamp whose format is `%Y%m%d`.
-fn get_timestamp() -> String {
-    use chrono::Local;
-
-    let local_time = Local::now();
-    local_time.format("%Y%m%d").to_string()
-}
-
-/// Get the data directory.
-/// 
-/// Currently, the data directory is `./record`.
-fn get_data_directory() -> PathBuf {
-    let mut path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-
-    path.push("record");
-    path
-}
-
-/// Get the exact filename to write to.
-fn get_path_to_write(identifier: &str) -> PathBuf {
-    let mut path = get_data_directory();
-    path.push(concat_string!(identifier, ".csv"));
-
-    path
 }
 
 async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteResult<()> {
