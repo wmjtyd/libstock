@@ -1,0 +1,15 @@
+[package]
+name = "libstock"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.19"
+concat-string = "1.0.1"
+flume = "0.10.13"
+scc = "0.8.1"
+thiserror = "1.0.31"
+tokio = { version = "1.19.2", features = ["rt", "fs", "io-util"] }
+tracing = "0.1.35"
