@@ -1,4 +1,4 @@
-use std::{sync::atomic::AtomicBool, path::PathBuf};
+use std::{sync::{atomic::AtomicBool, Arc}, path::PathBuf};
 
 use concat_string::concat_string;
 use flume::{Sender, Receiver};
@@ -12,7 +12,8 @@ pub struct DataEntry {
     pub data: Vec<u8>,
 }
 
-pub struct RunningFlag(AtomicBool);
+#[derive(Clone)]
+pub struct RunningFlag(Arc<AtomicBool>);
 
 pub struct DataWriter {
     run_flag: RunningFlag,
@@ -27,12 +28,12 @@ impl RunningFlag {
 
     /// Should we continue running?
     pub fn is_running(&self) -> bool {
-        self.0.load(std::sync::atomic::Ordering::Release)
+        self.0.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Set the running flag.
     pub fn set_running(&self, value: bool) {
-        self.0.store(value, std::sync::atomic::Ordering::Acquire)
+        self.0.store(value, std::sync::atomic::Ordering::SeqCst)
     }
 }
 
@@ -46,24 +47,29 @@ impl DataWriter {
     pub fn add(&mut self, data: DataEntry) -> WriteResult<()> {
         self.sender
             .send(data)
-            .map_err(|e| WriteError::PushChannelFailed)
+            .map_err(|_| WriteError::PushChannelFailed)
     }
 
     /// Spawn the writer daemon.
-    pub async fn start(&mut self) -> JoinHandle<()> {
+    pub async fn start(&mut self) -> WriteResult<JoinHandle<()>> {
         // Create the directory to place the files in.
-        tokio::fs::create_dir_all(get_data_directory()).await;
+        tokio::fs::create_dir_all(get_data_directory())
+            .await
+            .map_err(WriteError::DataDirCreationFailed)?;
 
-        tokio::task::spawn(async {
+        let run_flag = self.run_flag.clone();
+        let receiver = self.receiver.clone();
+        
+        Ok(tokio::task::spawn(async move {
             loop {
-                if !self.run_flag.is_running() {
+                if !run_flag.is_running() {
                     break;
                 }
-
-                let task = async move {
+                
+                let task = async {
                     // Get the data entry.
                     let DataEntry { filename, data } = 
-                        self.receiver
+                        receiver
                             .recv_async()
                             .await
                             .map_err(WriteError::RecvDataFailed)?;
@@ -84,13 +90,13 @@ impl DataWriter {
                     continue;
                 }
             }
-        })
+        }))
     }
 }
 
 impl Default for RunningFlag {
     fn default() -> Self {
-        Self(AtomicBool::new(true))
+        Self(Arc::new(AtomicBool::new(true)))
     }
 }
 
@@ -101,7 +107,7 @@ impl Default for DataWriter {
         Self {
             sender,
             receiver,
-            ..Default::default()
+            run_flag: RunningFlag::default(),
         }
     }
 }
@@ -118,7 +124,7 @@ fn get_timestamp() -> String {
 /// 
 /// Currently, the data directory is `./record`.
 fn get_data_directory() -> PathBuf {
-    let path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
     path.push("record");
     path
@@ -126,7 +132,7 @@ fn get_data_directory() -> PathBuf {
 
 /// Get the exact filename to write to.
 fn get_path_to_write(identifier: &str) -> PathBuf {
-    let path = get_data_directory();
+    let mut path = get_data_directory();
     path.push(concat_string!(identifier, ".csv"));
 
     path
@@ -140,24 +146,27 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
         .append(true)
         .open(path)
         .await
-        .map_err(|e| WriteError::FileOpenFailed(e))?;
+        .map_err(WriteError::FileOpenFailed)?;
     
     // First, write length to file.
     let data_len = data.len().to_be_bytes();
     file.write_all(&data_len)
         .await
-        .map_err(|e| WriteError::LengthWriteFailed(e))?;
+        .map_err(WriteError::LengthWriteFailed)?;
 
     // Then, write data to file.
-    file.write_all(&data)
+    file.write_all(data)
         .await
-        .map_err(|e| WriteError::DataWriteFailed(e))?;
+        .map_err(WriteError::DataWriteFailed)?;
 
     Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum WriteError {
+    #[error("failed to create data directory: {0}")]
+    DataDirCreationFailed(tokio::io::Error),
+
     #[error("failed to push an entry to channel")]
     PushChannelFailed,
 
