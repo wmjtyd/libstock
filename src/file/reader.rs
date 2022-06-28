@@ -1,3 +1,5 @@
+//! Read the specified file and return the content stream.
+
 use chrono::{Local, Duration};
 use std::{fs::File, io::Read};
 
