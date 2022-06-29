@@ -1,6 +1,7 @@
 //! Methods for operating with hexadecimal strings.
 
 use std::{iter, num::ParseIntError};
+use rust_decimal::prelude::*;
 
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
@@ -43,7 +44,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
     //     value = split[0].to_string();
     // }
 
-    let float_indicator = match value.find('.') {
+    let scale_point_indicator = match value.find('.') {
         Some(idx) => value.len() - idx - 1 + E,
         None => 0,
     } as u8;
@@ -54,9 +55,9 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
 
     //  Fill rule:
     //  0     1     2     3     4     5     6     7     8    9
-    //  6     7     8     9    #FI
+    //  6     7     8     9    SPI
     //  5     -     -     -     -
-    //  0     0     0     5    #FI
+    //  0     0     0     5    SPI
 
     result.extend(
         hex_byte
@@ -87,14 +88,39 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
     //   - [ 6  7  8  9 ]
     //   - [ 0  0  0  5 ]
     result.reverse();
-    // Push the float indicator (FI).
-    result.push(float_indicator);
+    // Push the scale point indicator (SPI).
+    result.push(scale_point_indicator);
 
     if result.len() != 5 {
         panic!("code issue: result.len() != 5")
     } else {
         Ok(result)
     }
+}
+
+pub fn decode_bytes_to_num(value: &[u8]) -> Decimal {
+    let value = {
+        let mut dst = [0u8; 5];
+        dst.copy_from_slice(value);
+
+        dst
+    };
+
+    let num_part = i64::from_be_bytes({
+        let raw = &value[0..4];
+        let mut dst = [0u8; 8];
+
+        dst[4..].copy_from_slice(raw);
+        dst
+    });
+
+    let scale_part = u32::from_be_bytes({
+        let raw = value[4];
+        
+        [0, 0, 0, raw]
+    });
+
+    Decimal::new(num_part, scale_part)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -110,7 +136,7 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 
 #[cfg(test)]
 mod tests {
-    use crate::data::hex::{encode_num_to_bytes, hex_to_byte, HexDataError};
+    use crate::data::hex::{encode_num_to_bytes, hex_to_byte, HexDataError, decode_bytes_to_num};
 
     use super::long_to_hex;
 
@@ -144,7 +170,6 @@ mod tests {
         assert!(matches!(encode_num_to_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
         assert!(matches!(encode_num_to_bytes("512000"), Ok(v) if v == [0, 7, 208, 0, 0]));
         assert!(matches!(encode_num_to_bytes("10240000"), Ok(v) if v == [0, 156, 64, 0, 0]));
-        assert!(matches!(encode_num_to_bytes("102400000000"), Ok(v) if v == [215, 132, 0, 0, 0]));
 
         assert!(matches!(encode_num_to_bytes("512.000"), Ok(v) if v == [0, 7, 208, 0, 3]));
         assert!(matches!(encode_num_to_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
@@ -154,5 +179,17 @@ mod tests {
             encode_num_to_bytes("Hello!"),
             Err(HexDataError::StrLongParseError(_))
         ));
+    }
+
+    #[test]
+    fn decode_bytes_to_num_test() {
+        assert_eq!(decode_bytes_to_num(&[0, 0, 5, 0, 0]).to_string(), "1280");
+        assert_eq!(decode_bytes_to_num(&[0, 0, 100, 0, 0]).to_string(), "25600");
+        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 0, 0]).to_string(), "512000");
+        assert_eq!(decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(), "10240000");
+
+        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(), "512.000");
+        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 1, 3]).to_string(), "512.001");
+        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 16, 3]).to_string(), "512.016");
     }
 }
