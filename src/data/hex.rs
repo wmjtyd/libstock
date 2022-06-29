@@ -105,9 +105,6 @@ pub enum HexDataError {
 
     #[error("unable to encode a string to i64: {0}")]
     StrLongParseError(<i64 as std::str::FromStr>::Err),
-
-    #[error("unable to get the specified index ({0}) of hex_byte")]
-    LocateHexByteError(usize),
 }
 
 pub type HexDataResult<T> = Result<T, HexDataError>;
