@@ -1,7 +1,7 @@
 //! Methods for operating with hexadecimal strings.
 
-use std::{iter, num::ParseIntError};
 use rust_decimal::prelude::*;
+use std::{iter, num::ParseIntError};
 
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
@@ -116,7 +116,7 @@ pub fn decode_bytes_to_num(value: &[u8]) -> Decimal {
 
     let scale_part = u32::from_be_bytes({
         let raw = value[4];
-        
+
         [0, 0, 0, raw]
     });
 
@@ -136,7 +136,7 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 
 #[cfg(test)]
 mod tests {
-    use crate::data::hex::{encode_num_to_bytes, hex_to_byte, HexDataError, decode_bytes_to_num};
+    use crate::data::hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, HexDataError};
 
     use super::long_to_hex;
 
@@ -185,11 +185,26 @@ mod tests {
     fn decode_bytes_to_num_test() {
         assert_eq!(decode_bytes_to_num(&[0, 0, 5, 0, 0]).to_string(), "1280");
         assert_eq!(decode_bytes_to_num(&[0, 0, 100, 0, 0]).to_string(), "25600");
-        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 0, 0]).to_string(), "512000");
-        assert_eq!(decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(), "10240000");
+        assert_eq!(
+            decode_bytes_to_num(&[0, 7, 208, 0, 0]).to_string(),
+            "512000"
+        );
+        assert_eq!(
+            decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(),
+            "10240000"
+        );
 
-        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(), "512.000");
-        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 1, 3]).to_string(), "512.001");
-        assert_eq!(decode_bytes_to_num(&[0, 7, 208, 16, 3]).to_string(), "512.016");
+        assert_eq!(
+            decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(),
+            "512.000"
+        );
+        assert_eq!(
+            decode_bytes_to_num(&[0, 7, 208, 1, 3]).to_string(),
+            "512.001"
+        );
+        assert_eq!(
+            decode_bytes_to_num(&[0, 7, 208, 16, 3]).to_string(),
+            "512.016"
+        );
     }
 }

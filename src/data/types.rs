@@ -106,7 +106,7 @@ pub fn bit_deserialize_trade_side(id: u8) -> DataTypesResult<TradeSide> {
 #[derive(thiserror::Error, Debug)]
 pub enum DataTypesError {
     #[error("unexpected trade side ID: {0}")]
-    UnexpectedTradeSide(u8)
+    UnexpectedTradeSide(u8),
 }
 
 pub type DataTypesResult<T> = Result<T, DataTypesError>;

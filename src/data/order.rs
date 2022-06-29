@@ -1,5 +1,5 @@
 //! The order-related operations.
-//! 
+//!
 //! Note: we just copy it from `crypto-market`, and we may not test it well.
 
 use crypto_msg_parser::Order;
@@ -102,11 +102,7 @@ pub fn get_orders<'a>(new: &'a [Order], old: &'a [Order], order_type: OrderType)
     result
 }
 
-pub fn restore_orders<'a>(
-    old: &'a [Order],
-    diff: &'a [Order],
-    _type: OrderType,
-) -> Vec<Order> {
+pub fn restore_orders<'a>(old: &'a [Order], diff: &'a [Order], _type: OrderType) -> Vec<Order> {
     let mut result = Vec::new();
     if diff.is_empty() {
         return result;
@@ -176,4 +172,3 @@ pub fn restore_orders<'a>(
     }
     result
 }
-

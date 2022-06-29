@@ -1,13 +1,24 @@
 //! The orderbook-related operations.
 
-use std::{time::{SystemTime, SystemTimeError}, collections::HashMap, sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicUsize, Ordering},
+    time::{SystemTime, SystemTimeError},
+};
 
 use crypto_crawler::MarketType;
-use crypto_msg_parser::{OrderBookMsg, Order};
+use crypto_msg_parser::{Order, OrderBookMsg};
 use either::Either;
 use rust_decimal::prelude::ToPrimitive;
 
-use super::{order::{OrderType, get_orders}, hex::{long_to_hex, hex_to_byte, HexDataError, encode_num_to_bytes, decode_bytes_to_num}, types::{EXCHANGE, MARKET_TYPE_BIT, bit_serialize_message_type, SYMBLE, INFOTYPE, bit_deserialize_message_type}};
+use super::{
+    hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, long_to_hex, HexDataError},
+    order::{get_orders, OrderType},
+    types::{
+        bit_deserialize_message_type, bit_serialize_message_type, EXCHANGE, INFOTYPE,
+        MARKET_TYPE_BIT, SYMBLE,
+    },
+};
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
     let mut diff = OrderBookMsg {
@@ -44,8 +55,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
     // 2. 收到时间戳: 6 or 8 字节时间戳
     {
-        let now = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)?;
+        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         let now_ms = now.as_millis();
         let received_timestamp_hex = long_to_hex(now_ms as i64);
         let received_timestamp_hex_byte = hex_to_byte(&received_timestamp_hex)?;
@@ -55,14 +65,17 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     // 3. EXCHANGE: 1 字节信息标识
     {
         let exchange_str = orderbook.exchange.as_str();
-        let exchange_bit = EXCHANGE.get_by_left(exchange_str)
-            .ok_or_else(|| OrderbookError::UnimplementedExchange(either::Left(exchange_str.to_string())))?;
+        let exchange_bit = EXCHANGE.get_by_left(exchange_str).ok_or_else(|| {
+            OrderbookError::UnimplementedExchange(either::Left(exchange_str.to_string()))
+        })?;
         orderbook_bytes.push(*exchange_bit);
     }
 
     // 4. MARKET_TYPE: 1 字节信息标识
     {
-        let market_type = MARKET_TYPE_BIT.get_by_left(&orderbook.market_type).unwrap_or(&0);
+        let market_type = MARKET_TYPE_BIT
+            .get_by_left(&orderbook.market_type)
+            .unwrap_or(&0);
         orderbook_bytes.push(*market_type);
     }
 
@@ -78,7 +91,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
         let pair_hex = long_to_hex(*pair as i64);
         let pair_hex = format!("{pair_hex:0>4}");
-    
+
         let pair_hex_byte = hex_to_byte(&pair_hex)?;
         orderbook_bytes.extend_from_slice(&pair_hex_byte);
     }
@@ -97,7 +110,9 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
         for (k, order_list) in markets {
             // 7-1. 字节信息标识
             {
-                let info_type_bit = INFOTYPE.get_by_left(k).expect("should be either 'asks' or 'bids'");
+                let info_type_bit = INFOTYPE
+                    .get_by_left(k)
+                    .expect("should be either 'asks' or 'bids'");
                 orderbook_bytes.push(*info_type_bit);
             }
 
@@ -137,7 +152,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         // 副作用: start 會進行 fetch_add!
         let start = data_byte_ptr.fetch_add(offset, std::sync::atomic::Ordering::SeqCst);
         let end = start + offset;
-        
+
         &payload[start..end]
     };
 
@@ -146,7 +161,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         let payload = getseek(6);
         let mut buf = [0u8; 16];
         buf[10..].copy_from_slice(payload);
-        
+
         i128::from_be_bytes(buf)
     };
 
@@ -168,7 +183,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         let name = EXCHANGE
             .get_by_right(&bit)
             .ok_or(OrderbookError::UnimplementedExchange(either::Right(bit)))?;
-        
+
         *name
     };
 
@@ -179,7 +194,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         let name = MARKET_TYPE_BIT
             .get_by_right(&bit)
             .unwrap_or(&MarketType::Unknown);
-        
+
         *name
     };
 
@@ -193,7 +208,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
     // 6. SYMBLE: 2 字节信息标识
     let symble_pair = {
         let raw = getseek(2);
-        
+
         let mut dst = [0u8; 2];
         dst.copy_from_slice(raw);
 
@@ -229,16 +244,16 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
             for _ in 0..info_len {
                 let price = {
                     let raw_bytes = getseek(5);
-                    decode_bytes_to_num(raw_bytes)
-                        .to_f64()
-                        .ok_or_else(|| OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
+                    decode_bytes_to_num(raw_bytes).to_f64().ok_or_else(|| {
+                        OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
+                    })?
                 };
 
                 let quantity_base = {
                     let raw_bytes = getseek(5);
-                    decode_bytes_to_num(raw_bytes)
-                        .to_f64()
-                        .ok_or_else(|| OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
+                    decode_bytes_to_num(raw_bytes).to_f64().ok_or_else(|| {
+                        OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
+                    })?
                 };
 
                 let order = Order {
