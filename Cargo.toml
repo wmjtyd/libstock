@@ -7,6 +7,9 @@ edition = "2021"
 readme = "./README.md"
 license = "Apache-2.0"
 keywords = ["stock", "utility", "wmjtyd"]
+repository = "https://github.com/wmjtyd/libstock"
+documentation = "https://docs.rs/wmjtyd-libstock"
+homepage = "https://github.com/wmjtyd/libstock"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
