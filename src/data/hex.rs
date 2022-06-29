@@ -4,6 +4,17 @@ use rust_decimal::prelude::*;
 use std::{iter, num::ParseIntError};
 
 /// Convert a [`i64`] number to a hex string.
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::data::hex::long_to_hex;
+///
+/// assert_eq!(long_to_hex(1280), "0500");
+/// assert_eq!(long_to_hex(25600), "6400");
+/// assert_eq!(long_to_hex(512000), "07d000");
+/// assert_eq!(long_to_hex(10240000), "9c4000");
+/// ```
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
 
@@ -18,6 +29,32 @@ pub fn long_to_hex(num: i64) -> String {
 }
 
 /// Convert a hex string to bytes.
+/// 
+/// # Warnings
+/// 
+/// This method did not cover some edge cases, for example:
+/// 
+/// ```should_panic
+/// use wmjytd_libstock::data::hex::{hex_to_byte, HexDataError};
+/// 
+/// assert!(matches!(hex_to_byte("$"), Err(HexDataError::HexDecodeError(_))));
+/// assert!(matches!(hex_to_byte("你好"), Err(HexDataError::HexDecodeError(_))));
+/// ```
+///
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::data::hex::hex_to_byte;
+///
+/// assert!(matches!(hex_to_byte("0500"), Ok(v) if v == [5, 0]));
+/// assert!(matches!(hex_to_byte("6400"), Ok(v) if v == [100, 0]));
+/// assert!(matches!(hex_to_byte("07d000"), Ok(v) if v == [7, 208, 0]));
+/// assert!(matches!(hex_to_byte("9c4000"), Ok(v) if v == [156, 64, 0]));
+/// 
+/// assert!(matches!(hex_to_byte("9c400"), Ok(v) if v.is_empty()));
+/// assert!(matches!(hex_to_byte("9c4"), Ok(v) if v.is_empty()));
+/// assert!(matches!(hex_to_byte("9"), Ok(v) if v.is_empty()));
+/// ```
 pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
     let hex = hex.replace(' ', "");
     let mut bytes = Vec::<u8>::new();
@@ -36,6 +73,26 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
 }
 
 /// Encode a number string to bytes.
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::data::hex::{encode_num_to_bytes, HexDataError};
+/// 
+/// assert!(matches!(encode_num_to_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
+/// assert!(matches!(encode_num_to_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
+/// assert!(matches!(encode_num_to_bytes("512000"), Ok(v) if v == [0, 7, 208, 0, 0]));
+/// assert!(matches!(encode_num_to_bytes("10240000"), Ok(v) if v == [0, 156, 64, 0, 0]));
+/// 
+/// assert!(matches!(encode_num_to_bytes("512.000"), Ok(v) if v == [0, 7, 208, 0, 3]));
+/// assert!(matches!(encode_num_to_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
+/// assert!(matches!(encode_num_to_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
+/// 
+/// assert!(matches!(
+///     encode_num_to_bytes("Hello!"),
+///     Err(HexDataError::StrLongParseError(_))
+/// ));
+/// ```
 pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
     const E: usize = 0;
     let mut result = Vec::<u8>::with_capacity(5);
@@ -102,6 +159,36 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
 }
 
 /// Decode the specified bytes to a [`Decimal`].
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::data::hex::decode_bytes_to_num;
+///
+/// assert_eq!(decode_bytes_to_num(&[0, 0, 5, 0, 0]).to_string(), "1280");
+/// assert_eq!(decode_bytes_to_num(&[0, 0, 100, 0, 0]).to_string(), "25600");
+/// assert_eq!(
+///     decode_bytes_to_num(&[0, 7, 208, 0, 0]).to_string(),
+///     "512000"
+/// );
+/// assert_eq!(
+///     decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(),
+///     "10240000"
+/// );
+/// 
+/// assert_eq!(
+///     decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(),
+///     "512.000"
+/// );
+/// assert_eq!(
+///     decode_bytes_to_num(&[0, 7, 208, 1, 3]).to_string(),
+///     "512.001"
+/// );
+/// assert_eq!(
+///     decode_bytes_to_num(&[0, 7, 208, 16, 3]).to_string(),
+///     "512.016"
+/// );
+/// ```
 pub fn decode_bytes_to_num(value: &[u8]) -> Decimal {
     let value = {
         let mut dst = [0u8; 5];
@@ -137,78 +224,3 @@ pub enum HexDataError {
 }
 
 pub type HexDataResult<T> = Result<T, HexDataError>;
-
-#[cfg(test)]
-mod tests {
-    use crate::data::hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, HexDataError};
-
-    use super::long_to_hex;
-
-    #[test]
-    fn long_to_hex_test() {
-        assert_eq!(long_to_hex(1280), "0500");
-        assert_eq!(long_to_hex(25600), "6400");
-        assert_eq!(long_to_hex(512000), "07d000");
-        assert_eq!(long_to_hex(10240000), "9c4000");
-    }
-
-    #[test]
-    fn hex_to_byte_test() {
-        assert!(matches!(hex_to_byte("0500"), Ok(v) if v == [5, 0]));
-        assert!(matches!(hex_to_byte("6400"), Ok(v) if v == [100, 0]));
-        assert!(matches!(hex_to_byte("07d000"), Ok(v) if v == [7, 208, 0]));
-        assert!(matches!(hex_to_byte("9c4000"), Ok(v) if v == [156, 64, 0]));
-
-        assert!(matches!(hex_to_byte("9c400"), Ok(v) if v.is_empty()));
-        assert!(matches!(hex_to_byte("9c4"), Ok(v) if v.is_empty()));
-        assert!(matches!(hex_to_byte("9"), Ok(v) if v.is_empty()));
-
-        // Failed tests:
-        // assert!(matches!(hex_to_byte("$"), Err(HexDataError::HexDecodeError(_))));
-        // assert!(matches!(hex_to_byte("你好"), Err(HexDataError::HexDecodeError(_))));
-    }
-
-    #[test]
-    fn encode_num_to_bytes_test() {
-        assert!(matches!(encode_num_to_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
-        assert!(matches!(encode_num_to_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
-        assert!(matches!(encode_num_to_bytes("512000"), Ok(v) if v == [0, 7, 208, 0, 0]));
-        assert!(matches!(encode_num_to_bytes("10240000"), Ok(v) if v == [0, 156, 64, 0, 0]));
-
-        assert!(matches!(encode_num_to_bytes("512.000"), Ok(v) if v == [0, 7, 208, 0, 3]));
-        assert!(matches!(encode_num_to_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
-        assert!(matches!(encode_num_to_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
-
-        assert!(matches!(
-            encode_num_to_bytes("Hello!"),
-            Err(HexDataError::StrLongParseError(_))
-        ));
-    }
-
-    #[test]
-    fn decode_bytes_to_num_test() {
-        assert_eq!(decode_bytes_to_num(&[0, 0, 5, 0, 0]).to_string(), "1280");
-        assert_eq!(decode_bytes_to_num(&[0, 0, 100, 0, 0]).to_string(), "25600");
-        assert_eq!(
-            decode_bytes_to_num(&[0, 7, 208, 0, 0]).to_string(),
-            "512000"
-        );
-        assert_eq!(
-            decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(),
-            "10240000"
-        );
-
-        assert_eq!(
-            decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(),
-            "512.000"
-        );
-        assert_eq!(
-            decode_bytes_to_num(&[0, 7, 208, 1, 3]).to_string(),
-            "512.001"
-        );
-        assert_eq!(
-            decode_bytes_to_num(&[0, 7, 208, 16, 3]).to_string(),
-            "512.016"
-        );
-    }
-}
