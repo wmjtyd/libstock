@@ -18,6 +18,7 @@ use super::{
     },
 };
 
+/// Encode a [`TradeMsg`] to bytes.
 pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
     let mut orderbook_bytes = Vec::<u8>::new();
 
@@ -93,6 +94,7 @@ pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
     Ok(orderbook_bytes)
 }
 
+/// Decode the specified bytes to a [`TradeMsg`].
 pub fn decode_trade(payload: &[u8]) -> TradeResult<TradeMsg> {
     let data_byte_ptr = AtomicUsize::new(0);
     let getseek = |offset| {

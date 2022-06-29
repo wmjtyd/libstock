@@ -4,6 +4,17 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 #[derive(Clone)]
 /// The flag storing a binary ([`bool`]) value.
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::flag::BinaryFlag;
+/// 
+/// let flag = BinaryFlag::new();
+/// assert_eq!(flag.is_running(), true);
+/// flag.set_running(false);
+/// assert_eq!(flag.is_running(), false);
+/// ```
 pub struct BinaryFlag(Arc<AtomicBool>);
 
 impl BinaryFlag {

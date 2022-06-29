@@ -40,6 +40,7 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
     diff
 }
 
+/// Encode a [`OrderBookMsg`] to bytes.
 pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     let mut orderbook_bytes = Vec::<u8>::new();
 
@@ -146,6 +147,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     Ok(orderbook_bytes)
 }
 
+/// Decode the specified bytes to a [`OrderBookMsg`].
 pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
     let data_byte_ptr = AtomicUsize::new(0);
     let getseek = |offset| {

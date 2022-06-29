@@ -1,3 +1,8 @@
+//! The methods for operating with orderbooks, orders and trades.
+//! 
+//! This module includes some methods for converting numbers,
+//! see the module [`hex`].
+
 pub mod hex;
 
 #[cfg(feature = "crypto")]

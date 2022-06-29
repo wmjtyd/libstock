@@ -3,6 +3,7 @@
 use rust_decimal::prelude::*;
 use std::{iter, num::ParseIntError};
 
+/// Convert a [`i64`] number to a hex string.
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
 
@@ -16,6 +17,7 @@ pub fn long_to_hex(num: i64) -> String {
     long_hex
 }
 
+/// Convert a hex string to bytes.
 pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
     let hex = hex.replace(' ', "");
     let mut bytes = Vec::<u8>::new();
@@ -33,6 +35,7 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
     Ok(bytes)
 }
 
+/// Encode a number string to bytes.
 pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
     const E: usize = 0;
     let mut result = Vec::<u8>::with_capacity(5);
@@ -98,6 +101,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
     }
 }
 
+/// Decode the specified bytes to a [`Decimal`].
 pub fn decode_bytes_to_num(value: &[u8]) -> Decimal {
     let value = {
         let mut dst = [0u8; 5];

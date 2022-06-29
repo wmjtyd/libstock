@@ -12,7 +12,7 @@ pub struct FileReader {
 impl FileReader {
     pub fn new(filename: String, day: i64) -> Option<FileReader> {
         let time = Local::now() - Duration::days(day);
-        let timestamp = fmt_timestamp(time);
+        let timestamp = fmt_timestamp(&time);
 
         let identifier = get_ident(&filename, &timestamp);
         let path = get_ident_path(&identifier);

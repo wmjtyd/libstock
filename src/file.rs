@@ -3,6 +3,6 @@
 pub mod ident;
 pub mod reader;
 pub mod writer;
+pub mod timestamp;
 
 mod datadir;
-mod timestamp;

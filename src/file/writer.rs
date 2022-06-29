@@ -12,7 +12,22 @@ use super::{
     timestamp::get_timestamp,
 };
 
-/// A data entry to send to a [`DataWriter`].
+/// A owned data entry to send to a [`DataWriter`].
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::file::writer::DataEntry;
+/// 
+/// let de = DataEntry {
+///    filename: "test".to_string(),
+///    data: b"OwO".to_vec(),
+/// };
+/// let de_clone = de.clone();
+/// 
+/// assert_eq!(de, de_clone);
+/// ```
+#[derive(Clone, Hash, PartialEq, Debug)]
 pub struct DataEntry {
     /// The file name to write as.
     pub filename: String,
@@ -20,6 +35,27 @@ pub struct DataEntry {
     pub data: Vec<u8>,
 }
 
+/// The writer daemon to write data and place file automatically,
+/// without worrying about managing the path; and asynchronoly,
+/// with a synchoronous `.add()` API.
+/// 
+/// # Example
+/// 
+/// ```
+/// use wmjytd_libstock::file::writer::{DataWriter, DataEntry};
+/// 
+/// let mut writer = DataWriter::new();
+/// writer.start();
+/// 
+/// writer.add(DataEntry {
+///    // It will be saved to './record/test20190101.csv'
+///    // according to our definition in `super::datadir`.
+///    filename: "test".to_string(),
+/// 
+///    // `.to_vec()` is needed to write it asynchoronously.
+///    data: b"OwO".to_vec(),
+/// });
+/// ```
 pub struct DataWriter {
     run_flag: BinaryFlag,
     sender: Sender<DataEntry>,
@@ -33,6 +69,23 @@ impl DataWriter {
     }
 
     /// Push a [`DataEntry`] to write.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use wmjytd_libstock::file::writer::{DataWriter, DataEntry};
+    /// 
+    /// let mut writer = DataWriter::new();
+    /// 
+    /// writer.add(DataEntry {
+    ///    // It will be saved to './record/test20190101.csv'
+    ///    // according to our definition in `super::datadir`.
+    ///    filename: "test".to_string(),
+    /// 
+    ///    // `.to_vec()` is needed to write it asynchoronously.
+    ///    data: b"OwO".to_vec(),
+    /// });
+    /// ```
     pub fn add(&mut self, data: DataEntry) -> WriteResult<()> {
         self.sender
             .send(data)
@@ -40,7 +93,7 @@ impl DataWriter {
     }
 
     /// Spawn the writer daemon.
-    pub async fn start(&mut self) -> WriteResult<JoinHandle<()>> {
+    pub async fn start(&self) -> WriteResult<JoinHandle<()>> {
         // Create the directory to place the files in.
         tokio::fs::create_dir_all(get_data_directory())
             .await
