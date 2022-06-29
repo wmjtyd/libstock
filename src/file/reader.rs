@@ -1,9 +1,9 @@
 //! Read the specified file and return the content stream.
 
-use chrono::{Local, Duration};
+use chrono::{Duration, Local};
 use std::{fs::File, io::Read};
 
-use crate::file::{timestamp::fmt_timestamp, ident::get_ident, datadir::get_ident_path};
+use crate::file::{datadir::get_ident_path, ident::get_ident, timestamp::fmt_timestamp};
 
 pub struct FileReader {
     file: File,
@@ -17,9 +17,7 @@ impl FileReader {
         let identifier = get_ident(&filename, &timestamp);
         let path = get_ident_path(&identifier);
 
-        File::open(path)
-            .ok()
-            .map(|file| FileReader { file })
+        File::open(path).ok().map(|file| FileReader { file })
     }
 }
 

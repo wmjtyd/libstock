@@ -1,12 +1,16 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use flume::{Sender, Receiver};
-use tokio::{task::JoinHandle, fs::OpenOptions};
+use flume::{Receiver, Sender};
+use tokio::{fs::OpenOptions, task::JoinHandle};
 
 use crate::flag::BinaryFlag;
 
-use super::{datadir::{get_ident_path, get_data_directory}, timestamp::get_timestamp, ident::get_ident};
+use super::{
+    datadir::{get_data_directory, get_ident_path},
+    ident::get_ident,
+    timestamp::get_timestamp,
+};
 
 /// A data entry to send to a [`DataWriter`].
 pub struct DataEntry {
@@ -44,21 +48,20 @@ impl DataWriter {
 
         let run_flag = self.run_flag.clone();
         let receiver = self.receiver.clone();
-        
+
         Ok(tokio::task::spawn(async move {
             loop {
                 if !run_flag.is_running() {
                     break;
                 }
-                
+
                 let task = async {
                     // Get the data entry.
-                    let DataEntry { filename, data } = 
-                        receiver
-                            .recv_async()
-                            .await
-                            .map_err(WriteError::RecvDataFailed)?;
-                    
+                    let DataEntry { filename, data } = receiver
+                        .recv_async()
+                        .await
+                        .map_err(WriteError::RecvDataFailed)?;
+
                     // Get the timestamp, and get the identifier.
                     let identifier = get_ident(&filename, &get_timestamp());
 
@@ -99,7 +102,7 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
         .open(path)
         .await
         .map_err(WriteError::FileOpenFailed)?;
-    
+
     // First, write length to file.
     let data_len = data.len().to_be_bytes();
     file.write_all(&data_len)

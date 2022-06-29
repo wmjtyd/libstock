@@ -1,9 +1,10 @@
 //! Methods for operating with hexadecimal strings.
 
-use std::{num::ParseIntError, iter};
+use std::{iter, num::ParseIntError};
 
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
+
     // TODO: migrate to div_ceil
     let mut num_hex_len = num_hex.len() / 2;
     if num_hex_len * 2 < num_hex.len() {
@@ -24,9 +25,7 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
 
     for i in 0..(hex.len() / 2) {
         let str = &hex[i * 2..i * 2 + 2];
-        let byt =
-            u8::from_str_radix(str, 16)
-                .map_err(HexDataError::HexDecodeError)?;
+        let byt = u8::from_str_radix(str, 16).map_err(HexDataError::HexDecodeError)?;
         bytes.push(byt);
     }
 
@@ -80,7 +79,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
             // As `iter::repeat` did not implement `ExactSizeIterator`,
             // we return the intermediate result as a `Vec`.
             // Collect here and we'll reverse it later.
-            .collect::<Vec<u8>>()
+            .collect::<Vec<u8>>(),
     );
 
     // Reverse again to get the positive sequence.
@@ -111,7 +110,7 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 
 #[cfg(test)]
 mod tests {
-    use crate::data::hex::{hex_to_byte, HexDataError, encode_num_to_bytes};
+    use crate::data::hex::{encode_num_to_bytes, hex_to_byte, HexDataError};
 
     use super::long_to_hex;
 
@@ -151,6 +150,9 @@ mod tests {
         assert!(matches!(encode_num_to_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
         assert!(matches!(encode_num_to_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
 
-        assert!(matches!(encode_num_to_bytes("Hello!"), Err(HexDataError::StrLongParseError(_))));
+        assert!(matches!(
+            encode_num_to_bytes("Hello!"),
+            Err(HexDataError::StrLongParseError(_))
+        ));
     }
 }
