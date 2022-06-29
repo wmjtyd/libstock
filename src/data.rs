@@ -8,3 +8,6 @@ pub mod order;
 
 #[cfg(feature = "crypto")]
 pub mod types;
+
+#[cfg(feature = "crypto")]
+pub mod trade;

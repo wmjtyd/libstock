@@ -3,6 +3,7 @@
 
 use bimap::BiMap;
 use crypto_crawler::{MarketType, MessageType};
+use crypto_msg_parser::TradeSide;
 
 macro_rules! create_bimap {
     ($idn:ident { $lt:ty => $rt:ty, $($l:expr => $r:expr,)* }) => {
@@ -84,3 +85,28 @@ pub fn bit_deserialize_message_type(id: u8) -> MessageType {
         _ => MessageType::Other,
     }
 }
+
+/// Serialize [`TradeSide`] to 1 bit identifier.
+pub fn bit_serialize_trade_side(side: TradeSide) -> u8 {
+    match side {
+        TradeSide::Buy => 1,
+        TradeSide::Sell => 2,
+    }
+}
+
+/// Deserialize a 1 bit identifier to a [`TradeSide`].
+pub fn bit_deserialize_trade_side(id: u8) -> DataTypesResult<TradeSide> {
+    Ok(match id {
+        1 => TradeSide::Buy,
+        2 => TradeSide::Sell,
+        _ => return Err(DataTypesError::UnexpectedTradeSide(id)),
+    })
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum DataTypesError {
+    #[error("unexpected trade side ID: {0}")]
+    UnexpectedTradeSide(u8)
+}
+
+pub type DataTypesResult<T> = Result<T, DataTypesError>;

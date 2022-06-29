@@ -1,6 +1,4 @@
 //! The orderbook-related operations.
-//! 
-//! Note: we just copy it from `crypto-market`, and we may not test it well.
 
 use std::{time::{SystemTime, SystemTimeError}, collections::HashMap, sync::atomic::{AtomicUsize, Ordering}};
 
@@ -36,7 +34,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
     // 我們接下來會使用 block 讓一個 scope 的變數乾淨一點。
 
-    // 1. 交易所时间戳: 6 or 8 
+    // 1. 交易所时间戳: 6 or 8 字节
     {
         let exchange_timestamp = orderbook.timestamp;
         let exchange_timestamp_hex = long_to_hex(exchange_timestamp);
