@@ -1,12 +1,12 @@
 [package]
-name = "wmjytd-libstock"
+name = "wmjtyd-libstock"
 description = "The utilities for operating stocks"
 authors = ["pan93412"]
 version = "0.1.0"
 edition = "2021"
 readme = "./README.md"
 license = "Apache-2.0"
-keywords = ["stock", "utility", "wmjytd"]
+keywords = ["stock", "utility", "wmjtyd"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

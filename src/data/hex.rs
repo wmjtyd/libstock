@@ -8,7 +8,7 @@ use std::{iter, num::ParseIntError};
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::data::hex::long_to_hex;
+/// use wmjtyd_libstock::data::hex::long_to_hex;
 ///
 /// assert_eq!(long_to_hex(1280), "0500");
 /// assert_eq!(long_to_hex(25600), "6400");
@@ -35,7 +35,7 @@ pub fn long_to_hex(num: i64) -> String {
 /// This method did not cover some edge cases, for example:
 /// 
 /// ```should_panic
-/// use wmjytd_libstock::data::hex::{hex_to_byte, HexDataError};
+/// use wmjtyd_libstock::data::hex::{hex_to_byte, HexDataError};
 /// 
 /// assert!(matches!(hex_to_byte("$"), Err(HexDataError::HexDecodeError(_))));
 /// assert!(matches!(hex_to_byte("你好"), Err(HexDataError::HexDecodeError(_))));
@@ -44,7 +44,7 @@ pub fn long_to_hex(num: i64) -> String {
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::data::hex::hex_to_byte;
+/// use wmjtyd_libstock::data::hex::hex_to_byte;
 ///
 /// assert!(matches!(hex_to_byte("0500"), Ok(v) if v == [5, 0]));
 /// assert!(matches!(hex_to_byte("6400"), Ok(v) if v == [100, 0]));
@@ -77,7 +77,7 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::data::hex::{encode_num_to_bytes, HexDataError};
+/// use wmjtyd_libstock::data::hex::{encode_num_to_bytes, HexDataError};
 /// 
 /// assert!(matches!(encode_num_to_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
 /// assert!(matches!(encode_num_to_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
@@ -163,7 +163,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::data::hex::decode_bytes_to_num;
+/// use wmjtyd_libstock::data::hex::decode_bytes_to_num;
 ///
 /// assert_eq!(decode_bytes_to_num(&[0, 0, 5, 0, 0]).to_string(), "1280");
 /// assert_eq!(decode_bytes_to_num(&[0, 0, 100, 0, 0]).to_string(), "25600");

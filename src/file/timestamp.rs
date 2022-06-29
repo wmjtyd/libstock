@@ -12,7 +12,7 @@ pub fn get_timestamp() -> String {
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::file::timestamp::fmt_timestamp;
+/// use wmjtyd_libstock::file::timestamp::fmt_timestamp;
 /// use chrono::{DateTime, Local};
 /// 
 /// let local_time = Local::now();

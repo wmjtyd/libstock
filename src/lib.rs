@@ -1,4 +1,4 @@
-//! wmjytd-libstock - utilities for operating stocks
+//! wmjtyd-libstock - utilities for operating stocks
 //! 
 //! The utilities for operating stocks. For example:
 //! 

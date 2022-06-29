@@ -10,7 +10,7 @@ use concat_string::concat_string;
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::file::ident::get_ident;
+/// use wmjtyd_libstock::file::ident::get_ident;
 /// 
 /// let ident = get_ident("test", "20190101");
 /// assert_eq!(ident, "test20190101");

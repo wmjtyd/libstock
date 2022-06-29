@@ -8,7 +8,7 @@ use std::sync::{atomic::AtomicBool, Arc};
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::flag::BinaryFlag;
+/// use wmjtyd_libstock::flag::BinaryFlag;
 /// 
 /// let flag = BinaryFlag::new();
 /// assert_eq!(flag.is_running(), true);

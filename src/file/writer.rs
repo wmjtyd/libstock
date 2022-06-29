@@ -17,7 +17,7 @@ use super::{
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::file::writer::DataEntry;
+/// use wmjtyd_libstock::file::writer::DataEntry;
 /// 
 /// let de = DataEntry {
 ///    filename: "test".to_string(),
@@ -42,7 +42,7 @@ pub struct DataEntry {
 /// # Example
 /// 
 /// ```
-/// use wmjytd_libstock::file::writer::{DataWriter, DataEntry};
+/// use wmjtyd_libstock::file::writer::{DataWriter, DataEntry};
 /// 
 /// let mut writer = DataWriter::new();
 /// writer.start();
@@ -73,7 +73,7 @@ impl DataWriter {
     /// # Example
     /// 
     /// ```
-    /// use wmjytd_libstock::file::writer::{DataWriter, DataEntry};
+    /// use wmjtyd_libstock::file::writer::{DataWriter, DataEntry};
     /// 
     /// let mut writer = DataWriter::new();
     /// 
