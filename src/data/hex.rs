@@ -1,6 +1,6 @@
 //! Methods for operating with hexadecimal strings.
 
-use std::num::ParseIntError;
+use std::{num::ParseIntError, iter};
 
 pub fn long_to_hex(num: i64) -> String {
     let num_hex = format!("{:x}", num); // to hex
@@ -33,9 +33,9 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
     Ok(bytes)
 }
 
-pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
-    let mut result: [u8; 5] = [0; 5];
-    let e = 0;
+pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
+    const E: usize = 0;
+    let mut result = Vec::<u8>::with_capacity(5);
 
     // if value.find("E-") != Some(0) {
     //     let split: Vec<&str> = value.split("E-").collect();
@@ -44,34 +44,58 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
     //     value = split[0].to_string();
     // }
 
-    result[4] = match value.find('.') {
-        Some(idx) => value.len() - idx - 1 + e,
+    let float_indicator = match value.find('.') {
+        Some(idx) => value.len() - idx - 1 + E,
         None => 0,
     } as u8;
 
     let value = value.replace('.', "");
     let hex_str = long_to_hex(value.parse().map_err(HexDataError::StrLongParseError)?);
     let hex_byte = hex_to_byte(&hex_str)?;
-    let length = hex_byte.len();
 
-    let get_byte = |index: usize| {
-        hex_byte.get(index).ok_or(HexDataError::LocateHexByteError(index))
-    };
+    //  Fill rule:
+    //  0     1     2     3     4     5     6     7     8    9
+    //  6     7     8     9    #FI
+    //  5     -     -     -     -
+    //  0     0     0     5    #FI
 
-    if length > 0 {
-        result[3] = *get_byte(length - 1)?;
-        if length > 1 {
-            result[2] = *get_byte(length - 2)?;
-            if length > 2 {
-                result[1] = *get_byte(length - 3)?;
-                if length > 3 {
-                    result[0] = *get_byte(length - 4)?;
-                }
-            }
-        }
+    result.extend(
+        hex_byte
+            .into_iter()
+            // First, reverse the order:
+            // Take the above as example:
+            //   - [ 9  8  7  6  5  4  3  2  1  0 ]
+            //   - [ 5 ]
+            .rev()
+            // Then, we chain a repeat '0' as the padding.
+            // Take the above as example:
+            //   - [ 9  8  7  6  5  4  3  2  1  0  0  ...]
+            //   - [ 5  0  0  0  0  0  0  0  0  0  0  ...]
+            .chain(iter::repeat(0))
+            // We take only 4 elements.
+            // Take the above as example:
+            //   - [ 9  8  7  6 ]
+            //   - [ 5  0  0  0 ]
+            .take(4)
+            // As `iter::repeat` did not implement `ExactSizeIterator`,
+            // we return the intermediate result as a `Vec`.
+            // Collect here and we'll reverse it later.
+            .collect::<Vec<u8>>()
+    );
+
+    // Reverse again to get the positive sequence.
+    // Take the above as example:
+    //   - [ 6  7  8  9 ]
+    //   - [ 0  0  0  5 ]
+    result.reverse();
+    // Push the float indicator (FI).
+    result.push(float_indicator);
+
+    if result.len() != 5 {
+        panic!("code issue: result.len() != 5")
+    } else {
+        Ok(result)
     }
-
-    Ok(result)
 }
 
 #[derive(thiserror::Error, Debug)]
