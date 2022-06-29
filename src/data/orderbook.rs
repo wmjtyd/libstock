@@ -114,9 +114,8 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
                 orderbook_bytes.extend_from_slice(&list_len_hex_byte);
             }
 
-            // 7-3 loops
+            // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
-                // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
                 let price = order.price;
                 let quantity_base = order.quantity_base;
 
@@ -228,10 +227,8 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
                 info_len
             };
 
-            // 7-3.
+            // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for _ in 0..info_len {
-                // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
-
                 let price = {
                     let raw_bytes = getseek(5);
                     decode_bytes_to_num(raw_bytes)
@@ -259,7 +256,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
                     // bid
                     2 => bids.push(order),
                     // unexpected value
-                    _ => panic!("unexpected value"),
+                    _ => return Err(OrderbookError::UnexpectedDataTypeFlag(data_type_flag)),
                 }
             }
         }
@@ -298,6 +295,9 @@ pub enum OrderbookError {
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),
+
+    #[error("unexpected data_type_flag: {0}")]
+    UnexpectedDataTypeFlag(u8),
 }
 
 pub type OrderbookResult<T> = Result<T, OrderbookError>;
