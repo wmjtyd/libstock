@@ -16,3 +16,6 @@ pub mod types;
 
 #[cfg(feature = "crypto")]
 pub mod trade;
+
+#[cfg(feature = "crypto")]
+pub mod structure;
