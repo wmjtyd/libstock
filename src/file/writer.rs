@@ -13,18 +13,18 @@ use super::{
 };
 
 /// A owned data entry to send to a [`DataWriter`].
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::file::writer::DataEntry;
-/// 
+///
 /// let de = DataEntry {
 ///    filename: "test".to_string(),
 ///    data: b"OwO".to_vec(),
 /// };
 /// let de_clone = de.clone();
-/// 
+///
 /// assert_eq!(de, de_clone);
 /// ```
 #[derive(Clone, Hash, PartialEq, Debug)]
@@ -38,20 +38,20 @@ pub struct DataEntry {
 /// The writer daemon to write data and place file automatically,
 /// without worrying about managing the path; and asynchronoly,
 /// with a synchoronous `.add()` API.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::file::writer::{DataWriter, DataEntry};
-/// 
+///
 /// let mut writer = DataWriter::new();
 /// writer.start();
-/// 
+///
 /// writer.add(DataEntry {
 ///    // It will be saved to './record/test20190101.csv'
 ///    // according to our definition in `super::datadir`.
 ///    filename: "test".to_string(),
-/// 
+///
 ///    // `.to_vec()` is needed to write it asynchoronously.
 ///    data: b"OwO".to_vec(),
 /// });
@@ -69,19 +69,19 @@ impl DataWriter {
     }
 
     /// Push a [`DataEntry`] to write.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use wmjtyd_libstock::file::writer::{DataWriter, DataEntry};
-    /// 
+    ///
     /// let mut writer = DataWriter::new();
-    /// 
+    ///
     /// writer.add(DataEntry {
     ///    // It will be saved to './record/test20190101.csv'
     ///    // according to our definition in `super::datadir`.
     ///    filename: "test".to_string(),
-    /// 
+    ///
     ///    // `.to_vec()` is needed to write it asynchoronously.
     ///    data: b"OwO".to_vec(),
     /// });

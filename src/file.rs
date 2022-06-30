@@ -2,7 +2,7 @@
 
 pub mod ident;
 pub mod reader;
-pub mod writer;
 pub mod timestamp;
+pub mod writer;
 
 mod datadir;

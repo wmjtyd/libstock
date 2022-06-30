@@ -4,9 +4,9 @@ use rust_decimal::prelude::*;
 use std::{iter, num::ParseIntError};
 
 /// Convert a [`i64`] number to a hex string.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::data::hex::long_to_hex;
 ///
@@ -29,20 +29,20 @@ pub fn long_to_hex(num: i64) -> String {
 }
 
 /// Convert a hex string to bytes.
-/// 
+///
 /// # Warnings
-/// 
+///
 /// This method did not cover some edge cases, for example:
-/// 
+///
 /// ```should_panic
 /// use wmjtyd_libstock::data::hex::{hex_to_byte, HexDataError};
-/// 
+///
 /// assert!(matches!(hex_to_byte("$"), Err(HexDataError::HexDecodeError(_))));
 /// assert!(matches!(hex_to_byte("你好"), Err(HexDataError::HexDecodeError(_))));
 /// ```
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::data::hex::hex_to_byte;
 ///
@@ -50,7 +50,7 @@ pub fn long_to_hex(num: i64) -> String {
 /// assert!(matches!(hex_to_byte("6400"), Ok(v) if v == [100, 0]));
 /// assert!(matches!(hex_to_byte("07d000"), Ok(v) if v == [7, 208, 0]));
 /// assert!(matches!(hex_to_byte("9c4000"), Ok(v) if v == [156, 64, 0]));
-/// 
+///
 /// assert!(matches!(hex_to_byte("9c400"), Ok(v) if v.is_empty()));
 /// assert!(matches!(hex_to_byte("9c4"), Ok(v) if v.is_empty()));
 /// assert!(matches!(hex_to_byte("9"), Ok(v) if v.is_empty()));
@@ -73,21 +73,21 @@ pub fn hex_to_byte(hex: &str) -> HexDataResult<Vec<u8>> {
 }
 
 /// Encode a number string to bytes.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::data::hex::{encode_num_to_bytes, HexDataError};
-/// 
+///
 /// assert!(matches!(encode_num_to_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
 /// assert!(matches!(encode_num_to_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
 /// assert!(matches!(encode_num_to_bytes("512000"), Ok(v) if v == [0, 7, 208, 0, 0]));
 /// assert!(matches!(encode_num_to_bytes("10240000"), Ok(v) if v == [0, 156, 64, 0, 0]));
-/// 
+///
 /// assert!(matches!(encode_num_to_bytes("512.000"), Ok(v) if v == [0, 7, 208, 0, 3]));
 /// assert!(matches!(encode_num_to_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
 /// assert!(matches!(encode_num_to_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
-/// 
+///
 /// assert!(matches!(
 ///     encode_num_to_bytes("Hello!"),
 ///     Err(HexDataError::StrLongParseError(_))
@@ -159,9 +159,9 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
 }
 
 /// Decode the specified bytes to a [`Decimal`].
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::data::hex::decode_bytes_to_num;
 ///
@@ -175,7 +175,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<Vec<u8>> {
 ///     decode_bytes_to_num(&[0, 156, 64, 0, 0]).to_string(),
 ///     "10240000"
 /// );
-/// 
+///
 /// assert_eq!(
 ///     decode_bytes_to_num(&[0, 7, 208, 0, 3]).to_string(),
 ///     "512.000"
