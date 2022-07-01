@@ -99,9 +99,6 @@ pub fn decode_bytes_to_num(value: &[u8; 5]) -> Decimal {
 
 #[derive(thiserror::Error, Debug)]
 pub enum HexDataError {
-    #[error("unable to encode a string to i64: {0}")]
-    StrLongParseError(<i64 as std::str::FromStr>::Err),
-
     #[error("unable to encode a string to usize: {0}")]
     StrUsizeParseError(<usize as std::str::FromStr>::Err),
 }

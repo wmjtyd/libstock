@@ -15,9 +15,12 @@ use super::{
 };
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
-    let mut diff = OrderBookMsg {
-        asks: vec![],
-        bids: vec![],
+    let asks = get_orders(&old.asks, &latest.asks, OrderType::Ask);
+    let bids = get_orders(&old.bids, &latest.bids, OrderType::Bid);
+
+    OrderBookMsg {
+        asks,
+        bids,
         exchange: latest.exchange.clone(),
         market_type: latest.market_type,
         symbol: latest.symbol.clone(),
@@ -28,10 +31,7 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
         seq_id: latest.seq_id,
         prev_seq_id: latest.prev_seq_id,
         json: latest.json.clone(),
-    };
-    diff.asks = get_orders(&old.asks, &latest.asks, OrderType::Ask);
-    diff.bids = get_orders(&old.bids, &latest.bids, OrderType::Bid);
-    diff
+    }
 }
 
 /// Encode a [`OrderBookMsg`] to bytes.
@@ -189,7 +189,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         (asks, bids)
     };
 
-    let orderbook = OrderBookMsg {
+    Ok(OrderBookMsg {
         exchange: exchange_type.to_string(),
         market_type,
         symbol: symbol.to_string(),
@@ -202,9 +202,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
         bids,
         snapshot: true,
         json: String::new(),
-    };
-
-    Ok(orderbook)
+    })
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -217,9 +215,6 @@ pub enum OrderbookError {
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),
-
-    #[error("unexpected data_type_flag: {0}")]
-    UnexpectedDataTypeFlag(u8),
 }
 
 pub type OrderbookResult<T> = Result<T, OrderbookError>;
