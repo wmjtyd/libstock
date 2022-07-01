@@ -14,37 +14,37 @@ use super::{
 };
 
 /// Encode a [`TradeMsg`] to bytes.
-pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
-    // Preallocate 21 bytes.
-    let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
+pub fn encode_trade(trade: &TradeMsg) -> TradeResult<Vec<u8>> {
+    // This data should have 32 bytes.
+    let mut bytes = Vec::<u8>::with_capacity(32);
 
     // 1. 交易所时间戳: 8 字节
-    orderbook_bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
+    bytes.extend_from_slice(&ExchangeTimestampRepr(trade.timestamp).to_bytes());
 
     // 2. 收到时间戳: 8 字节
-    orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
+    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    orderbook_bytes
-        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
+    bytes
+        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&trade.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
+    bytes.extend_from_slice(&MarketTypeRepr(trade.market_type).to_bytes());
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    orderbook_bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
+    bytes.extend_from_slice(&MessageTypeRepr(trade.msg_type).to_bytes());
 
     // 6. SYMBOL: 2 字节信息标识
-    orderbook_bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
+    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&trade.pair).to_bytes());
 
     // 7. TradeSide: 1 字节信息标识
-    orderbook_bytes.extend_from_slice(&TradeSideRepr(orderbook.side).to_bytes());
+    bytes.extend_from_slice(&TradeSideRepr(trade.side).to_bytes());
 
     // 7#. data(price(5)、quant(5))
-    orderbook_bytes.extend_from_slice(&u32::encode_bytes(&orderbook.price.to_string())?);
-    orderbook_bytes.extend_from_slice(&u32::encode_bytes(&orderbook.quantity_base.to_string())?);
+    bytes.extend_from_slice(&u32::encode_bytes(&trade.price.to_string())?);
+    bytes.extend_from_slice(&u32::encode_bytes(&trade.quantity_base.to_string())?);
 
-    Ok(orderbook_bytes)
+    Ok(bytes)
 }
 
 /// Decode the specified bytes to a [`TradeMsg`].

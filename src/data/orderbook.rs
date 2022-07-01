@@ -40,27 +40,27 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
 
 /// Encode a [`OrderBookMsg`] to bytes.
 pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
-    // Preallocate 21 bytes.
-    let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
+    // This data should have "at least" 21 bytes.
+    let mut bytes = Vec::<u8>::with_capacity(21);
 
     // 1. 交易所时间戳: 8 字节
-    orderbook_bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
+    bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
 
     // 2. 收到时间戳: 8 字节
-    orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
+    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    orderbook_bytes
+    bytes
         .extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
+    bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    orderbook_bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
+    bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
 
     // 6. SYMBOL: 2 字节信息标识
-    orderbook_bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
+    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
 
     // 7. ask & bid
     {
@@ -75,18 +75,18 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
         for (k, order_list) in markets {
             // 7-1. 字节信息标识
-            orderbook_bytes.extend_from_slice(&{ InfoTypeRepr::try_from_str(k)?.to_bytes() });
+            bytes.extend_from_slice(&{ InfoTypeRepr::try_from_str(k)?.to_bytes() });
 
             // 7-2. 字节信息体的长度
-            orderbook_bytes.extend_from_slice(&{
+            bytes.extend_from_slice(&{
                 let list_len = (order_list.len() * 10) as u16;
                 list_len.to_be_bytes()
             });
 
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
-                orderbook_bytes.extend_from_slice(&u32::encode_bytes(&order.price.to_string())?);
-                orderbook_bytes
+                bytes.extend_from_slice(&u32::encode_bytes(&order.price.to_string())?);
+                bytes
                     .extend_from_slice(&u32::encode_bytes(&order.quantity_base.to_string())?);
             }
         }
@@ -94,7 +94,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
     // let compressed = compress_to_vec(&bytes, 6);
     // println!("compressed from {} to {}", data.len(), compressed.len());
-    Ok(orderbook_bytes)
+    Ok(bytes)
 }
 
 /// Decode the specified bytes to a [`OrderBookMsg`].
