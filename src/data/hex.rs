@@ -4,6 +4,24 @@ use std::num::ParseIntError;
 
 use rust_decimal::prelude::*;
 
+/// Encode a number to bytes, or decode bytes to number.
+/// 
+/// We currently support two variants:
+/// 
+/// - `u32`: 5-byte encoding & decoding.
+/// - `u64`: 10-byte encoding & decoding.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use wmjtyd_libstock::data::hex::{NumToBytesExt, HexDataError};
+///
+/// assert!(matches!(u32::encode_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
+/// assert_eq!(u32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
+///
+/// assert!(matches!(u64::encode_bytes("12800000000"), Ok(v) if v == [0, 0, 0, 0, 2, 250, 240, 128, 0, 0]));
+/// assert_eq!(u64::decode_bytes(&[0, 0, 0, 0, 2, 250, 240, 128, 0, 0]).to_string(), "12800000000");
+/// ```
 pub trait NumToBytesExt<const LEN: usize> {
     /// Encode a number string to bytes.
     fn encode_bytes(value: &str) -> HexDataResult<[u8; LEN]>;
