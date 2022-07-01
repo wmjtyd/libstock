@@ -1,201 +1,95 @@
 //! The trade-related operations.
 
-use std::{
-    sync::atomic::AtomicUsize,
-    time::{SystemTime, SystemTimeError},
-};
+use std::io::{BufReader, BufRead};
 
-use crypto_crawler::MarketType;
 use crypto_msg_parser::TradeMsg;
-use either::Either;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
-    hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, long_to_hex, HexDataError},
-    types::{
-        bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
-        bit_serialize_trade_side, DataTypesError, EXCHANGE, MARKET_TYPE_BIT, SYMBOL_PAIR,
-    },
+    hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
+    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, TradeSideRepr, StructureError, ReadExt},
 };
 
 /// Encode a [`TradeMsg`] to bytes.
-pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
-    let mut orderbook_bytes = Vec::<u8>::new();
+pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {    // Preallocate 21 bytes.
+    let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
 
-    // 1. 交易所时间戳: 6 or 8 字节时间戳
-    {
-        let exchange_timestamp = orderbook.timestamp;
-        let exchange_timestamp_hex = long_to_hex(exchange_timestamp);
-        let exchange_timestamp_hex_byte = hex_to_byte(&exchange_timestamp_hex)?;
-        orderbook_bytes.extend_from_slice(&exchange_timestamp_hex_byte);
-    }
+    // 1. 交易所时间戳: 8 字节
+    orderbook_bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
 
-    // 2. 收到时间戳: 6 or 8 字节时间戳
-    {
-        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let now_ms = now.as_millis();
-        let received_timestamp_hex = long_to_hex(now_ms as i64);
-        let received_timestamp_hex_byte = hex_to_byte(&received_timestamp_hex)?;
-        orderbook_bytes.extend_from_slice(&received_timestamp_hex_byte);
-    }
+    // 2. 收到时间戳: 8 字节
+    orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
-    // 3. EXCHANGE: 1 字节信息标识
-    {
-        let exchange_str = orderbook.exchange.as_str();
-        let exchange_bit = EXCHANGE.get_by_left(exchange_str).ok_or_else(|| {
-            TradeError::UnimplementedExchange(either::Left(exchange_str.to_string()))
-        })?;
-        orderbook_bytes.push(*exchange_bit);
-    }
+    // 3. EXCHANGE: 1 字节
+    orderbook_bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    {
-        let market_type = MARKET_TYPE_BIT
-            .get_by_left(&orderbook.market_type)
-            .unwrap_or(&0);
-        orderbook_bytes.push(*market_type);
-    }
+    orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    {
-        let message_type = bit_serialize_message_type(orderbook.msg_type);
-        orderbook_bytes.push(message_type);
-    }
+    orderbook_bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
 
-    // 6. SYMBLE: 2 字节信息标识
-    {
-        let pair = SYMBOL_PAIR.get_by_left(orderbook.pair.as_str()).unwrap();
-
-        let pair_hex = long_to_hex(*pair as i64);
-        let pair_hex = format!("{pair_hex:0>4}");
-
-        let pair_hex_byte = hex_to_byte(&pair_hex)?;
-        orderbook_bytes.extend_from_slice(&pair_hex_byte);
-    }
+    // 6. SYMBOL: 2 字节信息标识
+    orderbook_bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
 
     // 7. TradeSide: 1 字节信息标识
-    {
-        let side = bit_serialize_trade_side(orderbook.side);
-        orderbook_bytes.push(side);
-    }
+    orderbook_bytes.extend_from_slice(&TradeSideRepr(orderbook.side).to_bytes());
 
     // 7#. data(price(5)、quant(5))
-    {
-        let price = orderbook.price;
-        let quantity_base = orderbook.quantity_base;
-
-        let price_bytes = encode_num_to_bytes(&price.to_string())?;
-        let quantity_base_bytes = encode_num_to_bytes(&quantity_base.to_string())?;
-
-        orderbook_bytes.extend_from_slice(&price_bytes);
-        orderbook_bytes.extend_from_slice(&quantity_base_bytes);
-    }
+    orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&orderbook.price.to_string())?);
+    orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&orderbook.quantity_base.to_string())?);
 
     Ok(orderbook_bytes)
 }
 
 /// Decode the specified bytes to a [`TradeMsg`].
 pub fn decode_trade(payload: &[u8]) -> TradeResult<TradeMsg> {
-    let data_byte_ptr = AtomicUsize::new(0);
-    let getseek = |offset| {
-        // 副作用: start 會進行 fetch_add!
-        let start = data_byte_ptr.fetch_add(offset, std::sync::atomic::Ordering::SeqCst);
-        let end = start + offset;
+    let mut reader = BufReader::new(payload);
 
-        &payload[start..end]
-    };
+    // 1. 交易所时间戳: 8 字节时间戳
+    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
-    // 1. 交易所时间戳: 6 or 8 字节时间戳
-    let exchange_timestamp = {
-        let payload = getseek(6);
-        let mut buf = [0u8; 16];
-        buf[10..].copy_from_slice(payload);
-
-        i128::from_be_bytes(buf)
-    };
-
-    // 2. 收到时间戳: 6 or 8 字节时间戳
-    // -- 似乎暫時用不到？就略過了。
-    getseek(6);
-    // let received_timestamp = {
-    //     let payload = getseek(6);
-    //     let mut buf = [0u8; 16];
-    //     buf[10..].copy_from_slice(payload);
-
-    //     i128::from_be_bytes(buf)
-    // };
+    // 2. 收到时间戳: 8 字节时间戳 (NOT USED)
+    reader.consume(8);
+    // let received_timestamp = ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 
     // 3. EXCHANGE: 1 字节信息标识
-    let exchange_name = {
-        let bit = getseek(1)[0];
-
-        let name = EXCHANGE
-            .get_by_right(&bit)
-            .ok_or(TradeError::UnimplementedExchange(either::Right(bit)))?;
-
-        *name
-    };
+    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type_name = {
-        let bit = getseek(1)[0];
-
-        let name = MARKET_TYPE_BIT
-            .get_by_right(&bit)
-            .unwrap_or(&MarketType::Unknown);
-
-        *name
-    };
+    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    let message_type_name = {
-        let bit = getseek(1)[0];
+    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
 
-        bit_deserialize_message_type(bit)
-    };
-
-    // 6. SYMBLE: 2 字节信息标识
-    let symble_pair = {
-        let raw = getseek(2);
-
-        let mut dst = [0u8; 2];
-        dst.copy_from_slice(raw);
-
-        let symbol = u16::from_be_bytes(dst) as u8;
-        let pair = SYMBOL_PAIR.get_by_right(&symbol).unwrap_or(&"UNKNOWN");
-
-        *pair
-    };
+    // 6. SYMBOL_PAIR: 2 字节信息标识
+    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
 
     // 7. TradeSide: 1 字节信息标识
-    let trade_side = {
-        let bit = getseek(1)[0];
-
-        bit_deserialize_trade_side(bit)?
-    };
+    let trade_side = TradeSideRepr::try_from_reader(&mut reader)?.0;
 
     // 7#. data(price(5)、quant(5))
     let price = {
-        let raw_bytes = getseek(5);
-        decode_bytes_to_num(raw_bytes)
-            .to_f64()
-            .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
+        let raw_bytes = reader.read_exact_array()?;
+        decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
+            TradeError::DecimalConvertF64Failed(raw_bytes.to_vec())
+        })?
     };
 
     let quantity_base = {
-        let raw_bytes = getseek(5);
-        decode_bytes_to_num(raw_bytes)
-            .to_f64()
-            .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
+        let raw_bytes = reader.read_exact_array()?;
+        decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
+            TradeError::DecimalConvertF64Failed(raw_bytes.to_vec())
+        })?
     };
 
     let orderbook = TradeMsg {
-        exchange: exchange_name.to_string(),
-        market_type: market_type_name,
-        msg_type: message_type_name,
-        pair: symble_pair.to_string(),
-        symbol: symble_pair.to_string(),
-        timestamp: exchange_timestamp as i64,
+        exchange: exchange_type.to_string(),
+        market_type,
+        msg_type,
+        pair: pair.to_string(),
+        symbol: symbol.to_string(),
+        timestamp: exchange_timestamp,
         side: trade_side,
         price,
         quantity_base,
@@ -213,20 +107,11 @@ pub enum TradeError {
     #[error("data/hex error: {0}")]
     HexDataError(#[from] HexDataError),
 
-    #[error("type error: {0}")]
-    TypeError(#[from] DataTypesError),
-
-    #[error("failed to get system time: {0}")]
-    SystemTimeError(#[from] SystemTimeError),
-
-    #[error("this exchange has not been implemented: {0:?}")]
-    UnimplementedExchange(Either<String, u8>),
+    #[error("structure error: {0}")]
+    StructureError(#[from] StructureError),
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),
-
-    #[error("unexpected data_type_flag: {0}")]
-    UnexpectedDataTypeFlag(u8),
 }
 
 pub type TradeResult<T> = Result<T, TradeError>;

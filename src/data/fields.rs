@@ -3,14 +3,15 @@
 use std::{time::{SystemTime, SystemTimeError}, str::FromStr, io::{Read, BufReader}};
 
 use crypto_crawler::{MessageType, MarketType};
+use crypto_msg_parser::TradeSide;
 use either::Either;
 
-use super::types::{Exchange, bit_serialize_message_type, bit_deserialize_message_type, MARKET_TYPE_BIT, SYMBOL_PAIR, InfoType};
+use super::types::{Exchange, bit_serialize_message_type, bit_deserialize_message_type, MARKET_TYPE_BIT, SYMBOL_PAIR, InfoType, bit_deserialize_trade_side, bit_serialize_trade_side, DataTypesError};
 
 pub trait ReadExt: Read {
     /// Read data to a fixed array.
     fn read_exact_array<const LEN: usize>(&mut self) -> StructureResult<[u8; LEN]> {
-        let payload = [0u8; LEN];
+        let mut payload = [0u8; LEN];
         self.read_exact(&mut payload)
             .map_err(|e| StructureError::ReadFromReaderFailed(e, LEN))?;
         
@@ -72,7 +73,7 @@ impl ExchangeTypeRepr {
     }
 
     pub fn try_from_reader(reader: &mut impl ReadExt) -> StructureResult<Self> {
-        Ok(Self::try_from_bytes(&reader.read_exact_array()?)?)
+        Self::try_from_bytes(&reader.read_exact_array()?)
     }
 
     pub fn try_from_bytes(bytes: &[u8; 1]) -> StructureResult<Self> {
@@ -129,6 +130,23 @@ impl MessageTypeRepr {
 
     pub fn to_bytes(&self) -> [u8; 1] {
         [bit_serialize_message_type(self.0)]
+    }
+}
+
+/// The representation of [`TradeSide`].
+pub struct TradeSideRepr(pub TradeSide);
+
+impl TradeSideRepr {
+    pub fn try_from_reader(reader: &mut impl ReadExt) -> StructureResult<Self> {
+        Self::try_from_bytes(&reader.read_exact_array()?)
+    }
+
+    pub fn try_from_bytes(bytes: &[u8; 1]) -> StructureResult<Self> {
+        Ok(Self(bit_deserialize_trade_side(bytes[0])?))
+    }
+
+    pub fn to_bytes(&self) -> [u8; 1] {
+        [bit_serialize_trade_side(self.0)]
     }
 }
 
@@ -191,6 +209,9 @@ impl InfoTypeRepr {
 
 #[derive(thiserror::Error, Debug)]
 pub enum StructureError {
+    #[error("data/types error: {0}")]
+    DataTypesError(#[from] DataTypesError),
+
     #[error("failed to read {1} bytes from reader")]
     ReadFromReaderFailed(std::io::Error, usize),
 

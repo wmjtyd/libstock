@@ -11,7 +11,7 @@ use rust_decimal::prelude::ToPrimitive;
 use super::{
     hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
     order::{get_orders, OrderType},
-    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, StructureError, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, InfoTypeRepr, ReadExt},
+    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, StructureError, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, InfoTypeRepr, ReadExt}, types::InfoType,
 };
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
@@ -38,37 +38,24 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
 pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     // Preallocate 21 bytes.
     let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
-    let mut push = |byt| orderbook_bytes.extend_from_slice(byt);
 
     // 1. 交易所时间戳: 8 字节
-    push(&{
-        ExchangeTimestampRepr(orderbook.timestamp).to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
 
     // 2. 收到时间戳: 8 字节
-    push(&{
-        ReceivedTimestampRepr::try_new_from_now()?.to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    push(&{
-        ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    push(&{
-        MarketTypeRepr(orderbook.market_type).to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    push(&{
-        MessageTypeRepr(orderbook.msg_type).to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
 
     // 6. SYMBOL: 2 字节信息标识
-    push(&{
-        SymbolPairRepr::from_pair(&orderbook.pair).to_bytes()
-    });
+    orderbook_bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
 
     // 7. ask & bid
     {
@@ -83,25 +70,20 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
         for (k, order_list) in markets {
             // 7-1. 字节信息标识
-            push(&{
+            orderbook_bytes.extend_from_slice(&{
                 InfoTypeRepr::try_from_str(k)?.to_bytes()
             });
 
             // 7-2. 字节信息体的长度
-            push(&{
+            orderbook_bytes.extend_from_slice(&{
                 let list_len = (order_list.len() * 10) as u16;
                 list_len.to_be_bytes()
             });
 
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
-                push(&{
-                    encode_num_to_bytes(&order.price.to_string())?
-                });
-    
-                push(&{
-                    encode_num_to_bytes(&order.quantity_base.to_string())?
-                });
+                orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&order.price.to_string())?);
+                orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&order.quantity_base.to_string())?);
             }
         }
     }
@@ -178,10 +160,8 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
                 };
 
                 match info_type {
-                    // ask
-                    Ask => asks.push(order),
-                    // bid
-                    Bid => bids.push(order),
+                    InfoType::Asks => asks.push(order),
+                    InfoType::Bids => bids.push(order),
                 }
             }
         }

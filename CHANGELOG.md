@@ -13,10 +13,10 @@
 
 ## UNRELEASED - Features
 
-- `data::orderbook`: Use `BufReader` instead of our based-on-Atomic seek reader.
+- `data::orderbook`, `data::trade`: Use `BufReader` instead of our based-on-Atomic seek reader.
+- `data::orderbook`, `data::trade`: Use `data::fields` to serialize & deserialize.
 - Separate the serialization & deserialization of fields to `data::fields`
 - Replace the usize converter of `hex::encode_num_to_bytes` to a robust implementation
   - Related: `Some methods in data::hex are removed.`
-- `data::orderbook`: Use `data::fields` to serialize & deserialize.
 - `data::types`: Add `Exchange` and `InfoType` while removing `EXCHANGE` and `INFOTYPE`.
 - `data::orderbook`: Improve the logic of `generate_diff`.
