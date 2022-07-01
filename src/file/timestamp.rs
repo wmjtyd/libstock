@@ -1,3 +1,5 @@
+//! The timestamp utils for [`wmjtyd_libstock::data`](super).
+
 use chrono::{DateTime, Local};
 
 /// Get the timestamp whose format is `%Y%m%d` of current time.
