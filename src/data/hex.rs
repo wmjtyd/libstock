@@ -20,7 +20,7 @@ use rust_decimal::prelude::*;
 ///
 /// assert!(matches!(
 ///     encode_num_to_bytes("Hello!"),
-///     Err(HexDataError::StrLongParseError(_))
+///     Err(HexDataError::StrUsizeParseError(_))
 /// ));
 /// ```
 pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
@@ -40,7 +40,7 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
     } as u8;
 
     let value = value.replace('.', "");
-    result.extend_from_slice(&value.parse::<usize>().map_err(HexDataError::StrUsizeParseError)?.to_be_bytes());
+    result.extend_from_slice(&value.parse::<u32>().map_err(HexDataError::StrU32ParseError)?.to_be_bytes());
 
     // Push the scale point indicator (SPI).
     result.push(scale_point_indicator);
@@ -99,8 +99,8 @@ pub fn decode_bytes_to_num(value: &[u8; 5]) -> Decimal {
 
 #[derive(thiserror::Error, Debug)]
 pub enum HexDataError {
-    #[error("unable to encode a string to usize: {0}")]
-    StrUsizeParseError(<usize as std::str::FromStr>::Err),
+    #[error("unable to encode a string to u32: {0}")]
+    StrU32ParseError(<usize as std::str::FromStr>::Err),
 }
 
 pub type HexDataResult<T> = Result<T, HexDataError>;
