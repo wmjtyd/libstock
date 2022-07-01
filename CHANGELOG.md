@@ -20,3 +20,5 @@
   - Related: `Some methods in data::hex are removed.`
 - `data::types`: Add `Exchange` and `InfoType` while removing `EXCHANGE` and `INFOTYPE`.
 - `data::orderbook`: Improve the logic of `generate_diff`.
+- `data::hex`: deprecated old inextensible methods (`encode_num_to_bytes` & `decode_num_to_bytes`)
+  - use `u32::encode_bytes` and `u32::decode_bytes` for 5-byte encoding & decoding
