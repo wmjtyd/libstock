@@ -120,7 +120,7 @@ impl NumToBytesExt<10> for u64 {
         }) as i64;
     
         let scale_part = u32::from_be_bytes({
-            let raw = value[4];
+            let raw = value[9];
     
             [0, 0, 0, raw]
         });
