@@ -30,3 +30,4 @@
 ## UNRELEASED - CI
 
 - Also test if `cargo doc` can generate correct documentation.
+- Run `cargo clippy` and `cargo fmt --check`
