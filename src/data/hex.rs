@@ -20,7 +20,7 @@ use rust_decimal::prelude::*;
 ///
 /// assert!(matches!(
 ///     encode_num_to_bytes("Hello!"),
-///     Err(HexDataError::StrUsizeParseError(_))
+///     Err(HexDataError::StrU32ParseError(_))
 /// ));
 /// ```
 pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
