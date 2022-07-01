@@ -132,6 +132,11 @@ impl DataWriter {
             }
         }))
     }
+
+    /// Stop the writer daemon.
+    pub fn stop(&self) {
+        self.run_flag.set_running(false);
+    }
 }
 
 impl Default for DataWriter {
