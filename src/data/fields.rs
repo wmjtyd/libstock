@@ -215,7 +215,7 @@ impl InfoTypeRepr {
 }
 
 /// The period of a message.
-pub struct PeriodRepr<'a>(&'a str);
+pub struct PeriodRepr<'a>(pub &'a str);
 
 impl<'a> PeriodRepr<'a> {
     pub fn try_from_reader(reader: &mut impl ReadExt) -> StructureResult<Self> {

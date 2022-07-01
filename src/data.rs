@@ -9,13 +9,19 @@ pub mod hex;
 pub mod orderbook;
 
 #[cfg(feature = "crypto")]
-pub mod order;
+pub mod types;
 
 #[cfg(feature = "crypto")]
-pub mod types;
+pub mod fields;
+
+#[cfg(feature = "crypto")]
+pub mod order;
 
 #[cfg(feature = "crypto")]
 pub mod trade;
 
 #[cfg(feature = "crypto")]
-pub mod fields;
+pub mod bbo;
+
+#[cfg(feature = "crypto")]
+pub mod kline;
