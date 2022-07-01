@@ -40,7 +40,12 @@ pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
     } as u8;
 
     let value = value.replace('.', "");
-    result.extend_from_slice(&value.parse::<u32>().map_err(HexDataError::StrU32ParseError)?.to_be_bytes());
+    result.extend_from_slice(
+        &value
+            .parse::<u32>()
+            .map_err(HexDataError::StrU32ParseError)?
+            .to_be_bytes(),
+    );
 
     // Push the scale point indicator (SPI).
     result.push(scale_point_indicator);

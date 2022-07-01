@@ -4,7 +4,7 @@
 use bimap::BiMap;
 use crypto_crawler::{MarketType, MessageType};
 use crypto_msg_parser::TradeSide;
-use strum::{FromRepr, EnumString};
+use strum::{EnumString, FromRepr};
 
 macro_rules! create_bimap {
     ($idn:ident { $lt:ty => $rt:ty, $($l:expr => $r:expr,)* }) => {

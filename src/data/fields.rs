@@ -1,12 +1,19 @@
 //! The prefered encoded data structures of `libstock`.
 
-use std::{time::{SystemTime, SystemTimeError}, str::FromStr, io::{Read, BufReader}};
+use std::{
+    io::{BufReader, Read},
+    str::FromStr,
+    time::{SystemTime, SystemTimeError},
+};
 
-use crypto_crawler::{MessageType, MarketType};
+use crypto_crawler::{MarketType, MessageType};
 use crypto_msg_parser::TradeSide;
 use either::Either;
 
-use super::types::{Exchange, bit_serialize_message_type, bit_deserialize_message_type, MARKET_TYPE_BIT, SYMBOL_PAIR, InfoType, bit_deserialize_trade_side, bit_serialize_trade_side, DataTypesError};
+use super::types::{
+    bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
+    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, SYMBOL_PAIR,
+};
 
 pub trait ReadExt: Read {
     /// Read data to a fixed array.
@@ -14,7 +21,7 @@ pub trait ReadExt: Read {
         let mut payload = [0u8; LEN];
         self.read_exact(&mut payload)
             .map_err(|e| StructureError::ReadFromReaderFailed(e, LEN))?;
-        
+
         Ok(payload)
     }
 }
@@ -68,7 +75,8 @@ pub struct ExchangeTypeRepr(pub Exchange);
 
 impl ExchangeTypeRepr {
     pub fn try_from_str(str: &str) -> StructureResult<Self> {
-        let exchange = Exchange::from_str(str).map_err(|_| StructureError::UnimplementedExchange(Either::Left(str.to_string())))?;
+        let exchange = Exchange::from_str(str)
+            .map_err(|_| StructureError::UnimplementedExchange(Either::Left(str.to_string())))?;
         Ok(Self(exchange))
     }
 
@@ -108,10 +116,8 @@ impl MarketTypeRepr {
     }
 
     pub fn to_bytes(&self) -> [u8; 1] {
-        let bit = *MARKET_TYPE_BIT
-            .get_by_left(&self.0)
-            .unwrap_or(&0);
-        
+        let bit = *MARKET_TYPE_BIT.get_by_left(&self.0).unwrap_or(&0);
+
         [bit]
     }
 }
@@ -186,7 +192,8 @@ pub struct InfoTypeRepr(pub InfoType);
 
 impl InfoTypeRepr {
     pub fn try_from_str(str: &str) -> StructureResult<Self> {
-        let exchange = InfoType::from_str(str).map_err(|_| StructureError::UnimplementedInfoType(Either::Left(str.to_string())))?;
+        let exchange = InfoType::from_str(str)
+            .map_err(|_| StructureError::UnimplementedInfoType(Either::Left(str.to_string())))?;
         Ok(Self(exchange))
     }
 

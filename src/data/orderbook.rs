@@ -2,16 +2,20 @@
 
 use std::{
     collections::HashMap,
-    io::{BufReader, BufRead},
+    io::{BufRead, BufReader},
 };
 
 use crypto_msg_parser::{Order, OrderBookMsg};
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
+    fields::{
+        ExchangeTimestampRepr, ExchangeTypeRepr, InfoTypeRepr, MarketTypeRepr, MessageTypeRepr,
+        ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+    },
     hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
     order::{get_orders, OrderType},
-    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, StructureError, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, InfoTypeRepr, ReadExt}, types::InfoType,
+    types::InfoType,
 };
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
@@ -46,7 +50,8 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    orderbook_bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
+    orderbook_bytes
+        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
@@ -70,9 +75,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
         for (k, order_list) in markets {
             // 7-1. 字节信息标识
-            orderbook_bytes.extend_from_slice(&{
-                InfoTypeRepr::try_from_str(k)?.to_bytes()
-            });
+            orderbook_bytes.extend_from_slice(&{ InfoTypeRepr::try_from_str(k)?.to_bytes() });
 
             // 7-2. 字节信息体的长度
             orderbook_bytes.extend_from_slice(&{
@@ -83,7 +86,8 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
                 orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&order.price.to_string())?);
-                orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&order.quantity_base.to_string())?);
+                orderbook_bytes
+                    .extend_from_slice(&encode_num_to_bytes(&order.quantity_base.to_string())?);
             }
         }
     }

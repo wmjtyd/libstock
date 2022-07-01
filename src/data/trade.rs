@@ -1,17 +1,21 @@
 //! The trade-related operations.
 
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 
 use crypto_msg_parser::TradeMsg;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
+    fields::{
+        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
+        ReceivedTimestampRepr, StructureError, SymbolPairRepr, TradeSideRepr,
+    },
     hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
-    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, TradeSideRepr, StructureError, ReadExt},
 };
 
 /// Encode a [`TradeMsg`] to bytes.
-pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {    // Preallocate 21 bytes.
+pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
+    // Preallocate 21 bytes.
     let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
 
     // 1. 交易所时间戳: 8 字节
@@ -21,7 +25,8 @@ pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {    // Preall
     orderbook_bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    orderbook_bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
+    orderbook_bytes
+        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     orderbook_bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
@@ -71,16 +76,16 @@ pub fn decode_trade(payload: &[u8]) -> TradeResult<TradeMsg> {
     // 7#. data(price(5)、quant(5))
     let price = {
         let raw_bytes = reader.read_exact_array()?;
-        decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
-            TradeError::DecimalConvertF64Failed(raw_bytes.to_vec())
-        })?
+        decode_bytes_to_num(&raw_bytes)
+            .to_f64()
+            .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
 
     let quantity_base = {
         let raw_bytes = reader.read_exact_array()?;
-        decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
-            TradeError::DecimalConvertF64Failed(raw_bytes.to_vec())
-        })?
+        decode_bytes_to_num(&raw_bytes)
+            .to_f64()
+            .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
 
     let orderbook = TradeMsg {
