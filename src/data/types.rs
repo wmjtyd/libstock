@@ -21,6 +21,9 @@ pub enum Exchange {
     Crypto = 1,
     Ftx = 2,
     Binance = 3,
+    Huobi = 8,
+    Kucoin = 10,
+    Okx = 11,
 }
 
 #[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq)]
@@ -34,6 +37,14 @@ create_bimap!(SYMBOL_PAIR {
     1 => "BTC/USDT",
     2 => "BTC/USD",
     3 => "USDT/USD",
+});
+
+create_bimap!(PERIOD {
+    &'static str => u8,
+    "1m" => 1,
+    "5m" => 2,
+    "30m" => 3,
+    "1h" => 4,
 });
 
 create_bimap!(MARKET_TYPE_BIT {
