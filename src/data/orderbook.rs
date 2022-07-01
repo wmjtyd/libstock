@@ -2,22 +2,16 @@
 
 use std::{
     collections::HashMap,
-    sync::atomic::{AtomicUsize, Ordering},
-    time::{SystemTime, SystemTimeError},
+    io::{BufReader, BufRead},
 };
 
-use crypto_crawler::MarketType;
 use crypto_msg_parser::{Order, OrderBookMsg};
-use either::Either;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
-    hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, long_to_hex, HexDataError},
+    hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
     order::{get_orders, OrderType},
-    types::{
-        bit_deserialize_message_type, bit_serialize_message_type, EXCHANGE, INFOTYPE,
-        MARKET_TYPE_BIT, SYMBLE,
-    },
+    fields::{ExchangeTimestampRepr, ReceivedTimestampRepr, StructureError, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, InfoTypeRepr, ReadExt},
 };
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
@@ -42,60 +36,39 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
 
 /// Encode a [`OrderBookMsg`] to bytes.
 pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
-    let mut orderbook_bytes = Vec::<u8>::new();
+    // Preallocate 21 bytes.
+    let mut orderbook_bytes = Vec::<u8>::with_capacity(21);
+    let mut push = |byt| orderbook_bytes.extend_from_slice(byt);
 
-    // 我們接下來會使用 block 讓一個 scope 的變數乾淨一點。
+    // 1. 交易所时间戳: 8 字节
+    push(&{
+        ExchangeTimestampRepr(orderbook.timestamp).to_bytes()
+    });
 
-    // 1. 交易所时间戳: 6 or 8 字节
-    {
-        let exchange_timestamp = orderbook.timestamp;
-        let exchange_timestamp_hex = long_to_hex(exchange_timestamp);
-        let exchange_timestamp_hex_byte = hex_to_byte(&exchange_timestamp_hex)?;
-        orderbook_bytes.extend_from_slice(&exchange_timestamp_hex_byte);
-    }
+    // 2. 收到时间戳: 8 字节
+    push(&{
+        ReceivedTimestampRepr::try_new_from_now()?.to_bytes()
+    });
 
-    // 2. 收到时间戳: 6 or 8 字节时间戳
-    {
-        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let now_ms = now.as_millis();
-        let received_timestamp_hex = long_to_hex(now_ms as i64);
-        let received_timestamp_hex_byte = hex_to_byte(&received_timestamp_hex)?;
-        orderbook_bytes.extend_from_slice(&received_timestamp_hex_byte);
-    }
-
-    // 3. EXCHANGE: 1 字节信息标识
-    {
-        let exchange_str = orderbook.exchange.as_str();
-        let exchange_bit = EXCHANGE.get_by_left(exchange_str).ok_or_else(|| {
-            OrderbookError::UnimplementedExchange(either::Left(exchange_str.to_string()))
-        })?;
-        orderbook_bytes.push(*exchange_bit);
-    }
+    // 3. EXCHANGE: 1 字节
+    push(&{
+        ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes()
+    });
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    {
-        let market_type = MARKET_TYPE_BIT
-            .get_by_left(&orderbook.market_type)
-            .unwrap_or(&0);
-        orderbook_bytes.push(*market_type);
-    }
+    push(&{
+        MarketTypeRepr(orderbook.market_type).to_bytes()
+    });
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    {
-        let message_type = bit_serialize_message_type(orderbook.msg_type);
-        orderbook_bytes.push(message_type);
-    }
+    push(&{
+        MessageTypeRepr(orderbook.msg_type).to_bytes()
+    });
 
-    // 6. SYMBLE: 2 字节信息标识
-    {
-        let pair = SYMBLE.get_by_left(orderbook.pair.as_str()).unwrap();
-
-        let pair_hex = long_to_hex(*pair as i64);
-        let pair_hex = format!("{pair_hex:0>4}");
-
-        let pair_hex_byte = hex_to_byte(&pair_hex)?;
-        orderbook_bytes.extend_from_slice(&pair_hex_byte);
-    }
+    // 6. SYMBOL: 2 字节信息标识
+    push(&{
+        SymbolPairRepr::from_pair(&orderbook.pair).to_bytes()
+    });
 
     // 7. ask & bid
     {
@@ -110,34 +83,25 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
         for (k, order_list) in markets {
             // 7-1. 字节信息标识
-            {
-                let info_type_bit = INFOTYPE
-                    .get_by_left(k)
-                    .expect("should be either 'asks' or 'bids'");
-                orderbook_bytes.push(*info_type_bit);
-            }
+            push(&{
+                InfoTypeRepr::try_from_str(k)?.to_bytes()
+            });
 
             // 7-2. 字节信息体的长度
-            {
-                let list_len = (order_list.len() * 10) as i64;
-
-                let list_len_hex = long_to_hex(list_len);
-                let list_len_hex = format!("{:0>4}", list_len_hex);
-
-                let list_len_hex_byte = hex_to_byte(&list_len_hex)?;
-                orderbook_bytes.extend_from_slice(&list_len_hex_byte);
-            }
+            push(&{
+                let list_len = (order_list.len() * 10) as u16;
+                list_len.to_be_bytes()
+            });
 
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
-                let price = order.price;
-                let quantity_base = order.quantity_base;
-
-                let price_bytes = encode_num_to_bytes(&price.to_string())?;
-                let quantity_base_bytes = encode_num_to_bytes(&quantity_base.to_string())?;
-
-                orderbook_bytes.extend_from_slice(&price_bytes);
-                orderbook_bytes.extend_from_slice(&quantity_base_bytes);
+                push(&{
+                    encode_num_to_bytes(&order.price.to_string())?
+                });
+    
+                push(&{
+                    encode_num_to_bytes(&order.quantity_base.to_string())?
+                });
             }
         }
     }
@@ -149,111 +113,59 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
 /// Decode the specified bytes to a [`OrderBookMsg`].
 pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
-    let data_byte_ptr = AtomicUsize::new(0);
-    let getseek = |offset| {
-        // 副作用: start 會進行 fetch_add!
-        let start = data_byte_ptr.fetch_add(offset, std::sync::atomic::Ordering::SeqCst);
-        let end = start + offset;
+    let mut reader = BufReader::new(payload);
 
-        &payload[start..end]
-    };
+    // 1. 交易所时间戳: 8 字节时间戳
+    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
-    // 1. 交易所时间戳: 6 or 8 字节时间戳
-    let exchange_timestamp = {
-        let payload = getseek(6);
-        let mut buf = [0u8; 16];
-        buf[10..].copy_from_slice(payload);
-
-        i128::from_be_bytes(buf)
-    };
-
-    // 2. 收到时间戳: 6 or 8 字节时间戳
-    // -- 似乎暫時用不到？就略過了。
-    getseek(6);
-    // let received_timestamp = {
-    //     let payload = getseek(6);
-    //     let mut buf = [0u8; 16];
-    //     buf[10..].copy_from_slice(payload);
-
-    //     i128::from_be_bytes(buf)
-    // };
+    // 2. 收到时间戳: 8 字节时间戳 (NOT USED)
+    reader.consume(8);
+    // let received_timestamp = ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 
     // 3. EXCHANGE: 1 字节信息标识
-    let exchange_name = {
-        let bit = getseek(1)[0];
-
-        let name = EXCHANGE
-            .get_by_right(&bit)
-            .ok_or(OrderbookError::UnimplementedExchange(either::Right(bit)))?;
-
-        *name
-    };
+    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
 
     // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type_name = {
-        let bit = getseek(1)[0];
-
-        let name = MARKET_TYPE_BIT
-            .get_by_right(&bit)
-            .unwrap_or(&MarketType::Unknown);
-
-        *name
-    };
+    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
 
     // 5. MESSAGE_TYPE: 1 字节信息标识
-    let message_type_name = {
-        let bit = getseek(1)[0];
+    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
 
-        bit_deserialize_message_type(bit)
-    };
-
-    // 6. SYMBLE: 2 字节信息标识
-    let symble_pair = {
-        let raw = getseek(2);
-
-        let mut dst = [0u8; 2];
-        dst.copy_from_slice(raw);
-
-        let symbol = u16::from_be_bytes(dst) as u8;
-        let pair = SYMBLE.get_by_right(&symbol).unwrap_or(&"UNKNOWN");
-
-        *pair
-    };
+    // 6. SYMBOL_PAIR: 2 字节信息标识
+    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
 
     // 7. ask & bid
     let (asks, bids) = {
         let mut asks: Vec<Order> = Vec::new();
         let mut bids: Vec<Order> = Vec::new();
 
-        while data_byte_ptr.load(Ordering::SeqCst) < payload.len() {
+        // Check if the data has left.
+        //
+        // TODO: when `has_data_left` provided, replace the following
+        // to 'reader.has_data_left()`!
+        while reader.fill_buf().map(|b| !b.is_empty()).unwrap_or(false) {
             // 7-1. 字节信息标识
-            let data_type_flag = getseek(1)[0].to_be();
+            let info_type = InfoTypeRepr::try_from_reader(&mut reader)?.0;
 
             // 7-2. 字节信息体的长度
             let info_len = {
-                let raw = getseek(2);
-
-                let mut dst = [0u8; 2];
-                dst.copy_from_slice(raw);
-
-                let mut info_len = u16::from_be_bytes(dst);
-                info_len /= 10; // 每 10 bits 為一個資料單位
-
-                info_len
+                let data = reader.read_exact_array()?;
+                let info_len_raw = u16::from_be_bytes(data);
+                info_len_raw / 10 // 每 10 bits 為一個資料單位
             };
 
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for _ in 0..info_len {
                 let price = {
-                    let raw_bytes = getseek(5);
-                    decode_bytes_to_num(raw_bytes).to_f64().ok_or_else(|| {
+                    let raw_bytes = reader.read_exact_array()?;
+                    decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
                         OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
                     })?
                 };
 
                 let quantity_base = {
-                    let raw_bytes = getseek(5);
-                    decode_bytes_to_num(raw_bytes).to_f64().ok_or_else(|| {
+                    let raw_bytes = reader.read_exact_array()?;
+                    decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
                         OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
                     })?
                 };
@@ -265,13 +177,11 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
                     quantity_contract: None,
                 };
 
-                match data_type_flag {
+                match info_type {
                     // ask
-                    1 => asks.push(order),
+                    Ask => asks.push(order),
                     // bid
-                    2 => bids.push(order),
-                    // unexpected value
-                    _ => return Err(OrderbookError::UnexpectedDataTypeFlag(data_type_flag)),
+                    Bid => bids.push(order),
                 }
             }
         }
@@ -280,12 +190,12 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
     };
 
     let orderbook = OrderBookMsg {
-        exchange: exchange_name.to_string(),
-        market_type: market_type_name,
-        symbol: symble_pair.to_string(),
-        pair: symble_pair.to_string(),
-        msg_type: message_type_name,
-        timestamp: exchange_timestamp as i64,
+        exchange: exchange_type.to_string(),
+        market_type,
+        symbol: symbol.to_string(),
+        pair: pair.to_string(),
+        msg_type,
+        timestamp: exchange_timestamp,
         seq_id: None,
         prev_seq_id: None,
         asks,
@@ -302,11 +212,8 @@ pub enum OrderbookError {
     #[error("data/hex error: {0}")]
     HexDataError(#[from] HexDataError),
 
-    #[error("failed to get system time: {0}")]
-    SystemTimeError(#[from] SystemTimeError),
-
-    #[error("this exchange has not been implemented: {0:?}")]
-    UnimplementedExchange(Either<String, u8>),
+    #[error("structure error: {0}")]
+    StructureError(#[from] StructureError),
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),

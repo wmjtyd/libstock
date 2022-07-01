@@ -14,7 +14,7 @@ use super::{
     hex::{decode_bytes_to_num, encode_num_to_bytes, hex_to_byte, long_to_hex, HexDataError},
     types::{
         bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
-        bit_serialize_trade_side, DataTypesError, EXCHANGE, MARKET_TYPE_BIT, SYMBLE,
+        bit_serialize_trade_side, DataTypesError, EXCHANGE, MARKET_TYPE_BIT, SYMBOL_PAIR,
     },
 };
 
@@ -64,7 +64,7 @@ pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
 
     // 6. SYMBLE: 2 字节信息标识
     {
-        let pair = SYMBLE.get_by_left(orderbook.pair.as_str()).unwrap();
+        let pair = SYMBOL_PAIR.get_by_left(orderbook.pair.as_str()).unwrap();
 
         let pair_hex = long_to_hex(*pair as i64);
         let pair_hex = format!("{pair_hex:0>4}");
@@ -162,7 +162,7 @@ pub fn decode_trade(payload: &[u8]) -> TradeResult<TradeMsg> {
         dst.copy_from_slice(raw);
 
         let symbol = u16::from_be_bytes(dst) as u8;
-        let pair = SYMBLE.get_by_right(&symbol).unwrap_or(&"UNKNOWN");
+        let pair = SYMBOL_PAIR.get_by_right(&symbol).unwrap_or(&"UNKNOWN");
 
         *pair
     };

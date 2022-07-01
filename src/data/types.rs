@@ -4,6 +4,7 @@
 use bimap::BiMap;
 use crypto_crawler::{MarketType, MessageType};
 use crypto_msg_parser::TradeSide;
+use strum::{FromRepr, EnumString};
 
 macro_rules! create_bimap {
     ($idn:ident { $lt:ty => $rt:ty, $($l:expr => $r:expr,)* }) => {
@@ -15,24 +16,24 @@ macro_rules! create_bimap {
     }
 }
 
-create_bimap!(EXCHANGE {
-    &'static str => u8,
-    "crypto" => 1,
-    "ftx" => 2,
-    "binance" => 3,
-});
+#[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq)]
+pub enum Exchange {
+    Crypto = 1,
+    Ftx = 2,
+    Binance = 3,
+}
 
-create_bimap!(SYMBLE {
-    &'static str => u8,
-    "BTC/USDT" => 1,
-    "BTC/USD" => 2,
-    "USDT/USD" => 3,
-});
+#[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq)]
+pub enum InfoType {
+    Asks = 1,
+    Bids = 2,
+}
 
-create_bimap!(INFOTYPE {
-    &'static str => u8,
-    "asks" => 1,
-    "bids" => 2,
+create_bimap!(SYMBOL_PAIR {
+    u16 => &'static str,
+    1 => "BTC/USDT",
+    2 => "BTC/USD",
+    3 => "USDT/USD",
 });
 
 create_bimap!(MARKET_TYPE_BIT {
