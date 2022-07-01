@@ -10,7 +10,7 @@ use super::{
         ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
         ReceivedTimestampRepr, StructureError, SymbolPairRepr, TradeSideRepr,
     },
-    hex::{NumToBytesExt, HexDataError},
+    hex::{HexDataError, NumToBytesExt},
 };
 
 /// Encode a [`TradeMsg`] to bytes.

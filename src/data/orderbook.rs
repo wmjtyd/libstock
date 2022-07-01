@@ -13,7 +13,7 @@ use super::{
         ExchangeTimestampRepr, ExchangeTypeRepr, InfoTypeRepr, MarketTypeRepr, MessageTypeRepr,
         ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
     },
-    hex::{NumToBytesExt, HexDataError},
+    hex::{HexDataError, NumToBytesExt},
     order::{get_orders, OrderType},
     types::InfoType,
 };

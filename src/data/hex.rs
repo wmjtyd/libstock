@@ -5,14 +5,14 @@ use std::num::ParseIntError;
 use rust_decimal::prelude::*;
 
 /// Encode a number to bytes, or decode bytes to number.
-/// 
+///
 /// We currently support two variants:
-/// 
+///
 /// - `u32`: 5-byte encoding & decoding.
 /// - `u64`: 10-byte encoding & decoding.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use wmjtyd_libstock::data::hex::{NumToBytesExt, HexDataError};
 ///
@@ -63,7 +63,7 @@ impl NumToBytesExt<5> for u32 {
         // }
 
         let (num_str, scale) = float_to_num_with_scale(value);
-        
+
         let num = num_str.parse::<Self>()?.to_be_bytes();
         result[..4].copy_from_slice(&num);
         result[4] = scale;
@@ -103,16 +103,14 @@ impl NumToBytesExt<5> for u32 {
     /// );
     /// ```
     fn decode_bytes(value: &[u8; 5]) -> Decimal {
-        let num_part = Self::from_be_bytes({
-            *arrayref::array_ref![value, 0, 4]
-        }) as i64;
-    
+        let num_part = Self::from_be_bytes({ *arrayref::array_ref![value, 0, 4] }) as i64;
+
         let scale_part = u32::from_be_bytes({
             let raw = value[4];
-    
+
             [0, 0, 0, raw]
         });
-    
+
         Decimal::new(num_part, scale_part)
     }
 }
@@ -123,7 +121,7 @@ impl NumToBytesExt<10> for u64 {
         let mut result = [0u8; 10];
 
         let (num_str, scale) = float_to_num_with_scale(value);
-        
+
         let num = num_str.parse::<Self>()?.to_be_bytes();
         result[1..9].copy_from_slice(&num);
         result[9] = scale;
@@ -133,16 +131,14 @@ impl NumToBytesExt<10> for u64 {
 
     // WIP: examples
     fn decode_bytes(value: &[u8; 10]) -> Decimal {
-        let num_part = Self::from_be_bytes({
-            *arrayref::array_ref![value, 1, 8]
-        }) as i64;
-    
+        let num_part = Self::from_be_bytes({ *arrayref::array_ref![value, 1, 8] }) as i64;
+
         let scale_part = u32::from_be_bytes({
             let raw = value[9];
-    
+
             [0, 0, 0, raw]
         });
-    
+
         Decimal::new(num_part, scale_part)
     }
 }
