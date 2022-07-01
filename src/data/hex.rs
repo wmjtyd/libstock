@@ -45,7 +45,6 @@ impl NumToBytesExt<5> for u32 {
         // }
 
         let (num_str, scale) = float_to_num_with_scale(value);
-
         
         let num = num_str.parse::<Self>()?.to_be_bytes();
         result[..4].copy_from_slice(&num);
@@ -87,11 +86,35 @@ impl NumToBytesExt<5> for u32 {
     /// ```
     fn decode_bytes(value: &[u8; 5]) -> Decimal {
         let num_part = Self::from_be_bytes({
-            let raw = &value[0..4];
-            let mut dst = [0u8; 4];
+            *arrayref::array_ref![value, 0, 4]
+        }) as i64;
     
-            dst.copy_from_slice(&raw);
-            dst
+        let scale_part = u32::from_be_bytes({
+            let raw = value[4];
+    
+            [0, 0, 0, raw]
+        });
+    
+        Decimal::new(num_part, scale_part)
+    }
+}
+
+impl NumToBytesExt<10> for u64 {
+    fn encode_bytes(value: &str) -> HexDataResult<[u8; 10]> {
+        let mut result = [0u8; 10];
+
+        let (num_str, scale) = float_to_num_with_scale(value);
+        
+        let num = num_str.parse::<Self>()?.to_be_bytes();
+        result[1..9].copy_from_slice(&num);
+        result[9] = scale;
+
+        Ok(result)
+    }
+
+    fn decode_bytes(value: &[u8; 10]) -> Decimal {
+        let num_part = Self::from_be_bytes({
+            *arrayref::array_ref![value, 1, 8]
         }) as i64;
     
         let scale_part = u32::from_be_bytes({
