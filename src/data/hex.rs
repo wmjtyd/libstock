@@ -100,6 +100,7 @@ impl NumToBytesExt<5> for u32 {
 }
 
 impl NumToBytesExt<10> for u64 {
+    // WIP: examples
     fn encode_bytes(value: &str) -> HexDataResult<[u8; 10]> {
         let mut result = [0u8; 10];
 
@@ -112,6 +113,7 @@ impl NumToBytesExt<10> for u64 {
         Ok(result)
     }
 
+    // WIP: examples
     fn decode_bytes(value: &[u8; 10]) -> Decimal {
         let num_part = Self::from_be_bytes({
             *arrayref::array_ref![value, 1, 8]
