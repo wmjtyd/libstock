@@ -25,3 +25,4 @@
 - `data::hex`: Add the u64 to 10-byte encode & decode support
   - use `u64::encode_bytes` and `u64::decode_bytes` for 10-byte encoding & decoding
 - `data::types`: Add more exchanges, and add `PERIOD`.
+- Add the encoder and decoder of `bbo` and `kline`.
