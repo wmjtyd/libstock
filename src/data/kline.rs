@@ -72,7 +72,7 @@ pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
     Ok(bytes)
 }
 
-/// Decode the specified bytes to a [`BboMsg`].
+/// Decode the specified bytes to a [`KlineMsg`].
 pub fn decode_kline(payload: &[u8]) -> KlineResult<KlineMsg> {
     let mut reader = BufReader::new(payload);
 
