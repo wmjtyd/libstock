@@ -12,7 +12,8 @@ use either::Either;
 
 use super::types::{
     bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
-    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, SYMBOL_PAIR, PERIOD,
+    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
+    SYMBOL_PAIR,
 };
 
 pub trait ReadExt: Read {
@@ -233,7 +234,8 @@ impl<'a> PeriodRepr<'a> {
     }
 
     pub fn try_to_bytes(&self) -> StructureResult<[u8; 1]> {
-        let bit = *PERIOD.get_by_left(&self.0)
+        let bit = *PERIOD
+            .get_by_left(&self.0)
             .ok_or_else(|| StructureError::UnimplementedPeriod(Either::Left(self.0.to_string())))?;
 
         Ok([bit])

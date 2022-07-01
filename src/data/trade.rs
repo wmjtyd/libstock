@@ -25,8 +25,7 @@ pub fn encode_trade(trade: &TradeMsg) -> TradeResult<Vec<u8>> {
     bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    bytes
-        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&trade.exchange)?.to_bytes());
+    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&trade.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     bytes.extend_from_slice(&MarketTypeRepr(trade.market_type).to_bytes());

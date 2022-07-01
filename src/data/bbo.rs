@@ -1,11 +1,17 @@
 //! The bbo-related operations.
 
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 
 use crypto_msg_parser::BboMsg;
 use rust_decimal::prelude::ToPrimitive;
 
-use super::{hex::{HexDataError, NumToBytesExt}, fields::{StructureError, ExchangeTimestampRepr, ReceivedTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, ReadExt}};
+use super::{
+    fields::{
+        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
+        ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+    },
+    hex::{HexDataError, NumToBytesExt},
+};
 
 /// Encode a [`BboMsg`] to bytes.
 pub fn encode_bbo(bbo: &BboMsg) -> BboResult<Vec<u8>> {
@@ -19,8 +25,7 @@ pub fn encode_bbo(bbo: &BboMsg) -> BboResult<Vec<u8>> {
     bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    bytes
-        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&bbo.exchange)?.to_bytes());
+    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&bbo.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     bytes.extend_from_slice(&MarketTypeRepr(bbo.market_type).to_bytes());

@@ -1,28 +1,28 @@
 //! The kline-related operations.
 
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 
 use crypto_msg_parser::KlineMsg;
 use rust_decimal::prelude::ToPrimitive;
 
-use super::{hex::{HexDataError, NumToBytesExt}, fields::{StructureError, ExchangeTimestampRepr, ReceivedTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, SymbolPairRepr, ReadExt, PeriodRepr}};
+use super::{
+    fields::{
+        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, PeriodRepr,
+        ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+    },
+    hex::{HexDataError, NumToBytesExt},
+};
 
 /// The size of the k-line indicators.
-/// 
+///
 /// `[open, high, low, close, volume]`
 const KLINE_INDICATOR_SIZE: [usize; 5] = [5, 5, 5, 5, 10];
 
 /// Get the ordered fixed array with k-line indicators.
-/// 
+///
 /// The indicators will be ordered in `[open, high, low, close, volume]`.
 fn get_kline_indi_array(kline: &KlineMsg) -> [f64; 5] {
-    [
-        kline.open,
-        kline.high,
-        kline.low,
-        kline.close,
-        kline.volume,
-    ]
+    [kline.open, kline.high, kline.low, kline.close, kline.volume]
 }
 
 /// Encode a [`KlineMsg`] to bytes.
@@ -37,8 +37,7 @@ pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
     bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    bytes
-        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&kline.exchange)?.to_bytes());
+    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&kline.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     bytes.extend_from_slice(&MarketTypeRepr(kline.market_type).to_bytes());
@@ -58,15 +57,15 @@ pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
         macro_rules! create_extend_branch {
             ($ty:ty) => {
                 bytes.extend_from_slice(&<$ty>::encode_bytes(&price.to_string())?)
-            }
+            };
         }
-    
+
         let size = KLINE_INDICATOR_SIZE[idx];
 
         match size {
             5 => create_extend_branch!(u32),
             10 => create_extend_branch!(u64),
-            _ => unreachable!()
+            _ => unreachable!(),
         };
     }
 
@@ -104,22 +103,20 @@ pub fn decode_kline(payload: &[u8]) -> KlineResult<KlineMsg> {
     for (idx, size) in KLINE_INDICATOR_SIZE.iter().enumerate() {
         // FIXME: this code is too ugly!!
         macro_rules! get_indicators_branch {
-            ($ty: ty) => {
-                {
-                    let raw = reader.read_exact_array()?;
-                    let indicator = <$ty>::decode_bytes(&raw)
-                        .to_f64()
-                        .ok_or_else(|| KlineError::DecimalConvertF64Failed(raw.to_vec()))?;
-                    
-                    indicator
-                }
-            }
+            ($ty: ty) => {{
+                let raw = reader.read_exact_array()?;
+                let indicator = <$ty>::decode_bytes(&raw)
+                    .to_f64()
+                    .ok_or_else(|| KlineError::DecimalConvertF64Failed(raw.to_vec()))?;
+
+                indicator
+            }};
         }
-    
+
         indicators[idx] = match *size {
             5 => get_indicators_branch!(u32),
             10 => get_indicators_branch!(u64),
-            _ => unreachable!()
+            _ => unreachable!(),
         };
     }
     let [open, high, low, close, volume] = indicators;

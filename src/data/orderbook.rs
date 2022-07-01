@@ -50,8 +50,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
     bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
-    bytes
-        .extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
+    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
 
     // 4. MARKET_TYPE: 1 字节信息标识
     bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
@@ -86,8 +85,7 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
                 bytes.extend_from_slice(&u32::encode_bytes(&order.price.to_string())?);
-                bytes
-                    .extend_from_slice(&u32::encode_bytes(&order.quantity_base.to_string())?);
+                bytes.extend_from_slice(&u32::encode_bytes(&order.quantity_base.to_string())?);
             }
         }
     }
