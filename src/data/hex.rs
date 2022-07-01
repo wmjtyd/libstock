@@ -103,7 +103,7 @@ impl NumToBytesExt<5> for u32 {
     /// );
     /// ```
     fn decode_bytes(value: &[u8; 5]) -> Decimal {
-        let num_part = Self::from_be_bytes({ *arrayref::array_ref![value, 0, 4] }) as i64;
+        let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 0, 4]) as i64;
 
         let scale_part = u32::from_be_bytes({
             let raw = value[4];
@@ -131,7 +131,7 @@ impl NumToBytesExt<10> for u64 {
 
     // WIP: examples
     fn decode_bytes(value: &[u8; 10]) -> Decimal {
-        let num_part = Self::from_be_bytes({ *arrayref::array_ref![value, 1, 8] }) as i64;
+        let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 1, 8]) as i64;
 
         let scale_part = u32::from_be_bytes({
             let raw = value[9];
