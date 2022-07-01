@@ -13,7 +13,7 @@ use super::{
         ExchangeTimestampRepr, ExchangeTypeRepr, InfoTypeRepr, MarketTypeRepr, MessageTypeRepr,
         ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
     },
-    hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
+    hex::{NumToBytesExt, HexDataError},
     order::{get_orders, OrderType},
     types::InfoType,
 };
@@ -85,9 +85,9 @@ pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
 
             // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
             for order in order_list {
-                orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&order.price.to_string())?);
+                orderbook_bytes.extend_from_slice(&u32::encode_bytes(&order.price.to_string())?);
                 orderbook_bytes
-                    .extend_from_slice(&encode_num_to_bytes(&order.quantity_base.to_string())?);
+                    .extend_from_slice(&u32::encode_bytes(&order.quantity_base.to_string())?);
             }
         }
     }
@@ -144,14 +144,14 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
             for _ in 0..info_len {
                 let price = {
                     let raw_bytes = reader.read_exact_array()?;
-                    decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
+                    u32::decode_bytes(&raw_bytes).to_f64().ok_or_else(|| {
                         OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
                     })?
                 };
 
                 let quantity_base = {
                     let raw_bytes = reader.read_exact_array()?;
-                    decode_bytes_to_num(&raw_bytes).to_f64().ok_or_else(|| {
+                    u32::decode_bytes(&raw_bytes).to_f64().ok_or_else(|| {
                         OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
                     })?
                 };

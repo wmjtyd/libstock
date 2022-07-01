@@ -10,7 +10,7 @@ use super::{
         ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
         ReceivedTimestampRepr, StructureError, SymbolPairRepr, TradeSideRepr,
     },
-    hex::{decode_bytes_to_num, encode_num_to_bytes, HexDataError},
+    hex::{NumToBytesExt, HexDataError},
 };
 
 /// Encode a [`TradeMsg`] to bytes.
@@ -41,8 +41,8 @@ pub fn encode_trade(orderbook: &TradeMsg) -> TradeResult<Vec<u8>> {
     orderbook_bytes.extend_from_slice(&TradeSideRepr(orderbook.side).to_bytes());
 
     // 7#. data(price(5)、quant(5))
-    orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&orderbook.price.to_string())?);
-    orderbook_bytes.extend_from_slice(&encode_num_to_bytes(&orderbook.quantity_base.to_string())?);
+    orderbook_bytes.extend_from_slice(&u32::encode_bytes(&orderbook.price.to_string())?);
+    orderbook_bytes.extend_from_slice(&u32::encode_bytes(&orderbook.quantity_base.to_string())?);
 
     Ok(orderbook_bytes)
 }
@@ -76,14 +76,14 @@ pub fn decode_trade(payload: &[u8]) -> TradeResult<TradeMsg> {
     // 7#. data(price(5)、quant(5))
     let price = {
         let raw_bytes = reader.read_exact_array()?;
-        decode_bytes_to_num(&raw_bytes)
+        u32::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
 
     let quantity_base = {
         let raw_bytes = reader.read_exact_array()?;
-        decode_bytes_to_num(&raw_bytes)
+        u32::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| TradeError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
