@@ -12,7 +12,7 @@ use either::Either;
 
 use super::types::{
     bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
-    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, SYMBOL_PAIR,
+    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, SYMBOL_PAIR, PERIOD,
 };
 
 pub trait ReadExt: Read {
@@ -214,6 +214,32 @@ impl InfoTypeRepr {
     }
 }
 
+/// The period of a message.
+pub struct PeriodRepr<'a>(&'a str);
+
+impl<'a> PeriodRepr<'a> {
+    pub fn try_from_reader(reader: &mut impl ReadExt) -> StructureResult<Self> {
+        Self::try_from_bytes(&reader.read_exact_array()?)
+    }
+
+    pub fn try_from_bytes(bytes: &[u8; 1]) -> StructureResult<Self> {
+        let bit = bytes[0] as u8;
+
+        let name = PERIOD
+            .get_by_right(&bit)
+            .ok_or(StructureError::UnimplementedPeriod(Either::Right(bit)))?;
+
+        Ok(Self(*name))
+    }
+
+    pub fn try_to_bytes(&self) -> StructureResult<[u8; 1]> {
+        let bit = *PERIOD.get_by_left(&self.0)
+            .ok_or_else(|| StructureError::UnimplementedPeriod(Either::Left(self.0.to_string())))?;
+
+        Ok([bit])
+    }
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum StructureError {
     #[error("data/types error: {0}")]
@@ -230,6 +256,9 @@ pub enum StructureError {
 
     #[error("this info type has not been implemented: {0:?}")]
     UnimplementedInfoType(Either<String, usize>),
+
+    #[error("this period has not been implemented: {0:?}")]
+    UnimplementedPeriod(Either<String, u8>),
 }
 
 pub type StructureResult<T> = Result<T, StructureError>;
