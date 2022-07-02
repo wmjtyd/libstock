@@ -43,3 +43,5 @@
 
 - `file::writer`: Don't create the directory if it has been existed.
 - `file::writer`: `.stop()` can't work properly.
+- (beta 4) `{InfoTypeExpr,ExchangeTypeRepr}::try_from_str` should be from lowercase
+  - Added the test case of this.

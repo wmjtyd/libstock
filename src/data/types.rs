@@ -17,6 +17,7 @@ macro_rules! create_bimap {
 }
 
 #[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq)]
+#[strum(serialize_all = "lowercase")]
 pub enum Exchange {
     Crypto = 1,
     Ftx = 2,
@@ -27,6 +28,7 @@ pub enum Exchange {
 }
 
 #[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq)]
+#[strum(serialize_all = "lowercase")]
 pub enum InfoType {
     Asks = 1,
     Bids = 2,

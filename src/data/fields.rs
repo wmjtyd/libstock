@@ -264,3 +264,42 @@ pub enum StructureError {
 }
 
 pub type StructureResult<T> = Result<T, StructureError>;
+
+#[cfg(test)]
+mod tests {
+    use crate::data::{types::{Exchange, InfoType}, fields::InfoTypeRepr};
+
+    use super::ExchangeTypeRepr;
+
+    #[test]
+    fn test_exchange_expr_from_str() {
+        assert_eq!(ExchangeTypeRepr::try_from_str("crypto").unwrap().0, Exchange::Crypto);
+        assert_eq!(ExchangeTypeRepr::try_from_str("ftx").unwrap().0, Exchange::Ftx);
+        assert_eq!(ExchangeTypeRepr::try_from_str("binance").unwrap().0, Exchange::Binance);
+        assert_eq!(ExchangeTypeRepr::try_from_str("huobi").unwrap().0, Exchange::Huobi);
+        assert_eq!(ExchangeTypeRepr::try_from_str("kucoin").unwrap().0, Exchange::Kucoin);
+        assert_eq!(ExchangeTypeRepr::try_from_str("okx").unwrap().0, Exchange::Okx);
+    }
+   
+    #[test]
+    fn test_exchange_expr_from_byte() {
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[1]).unwrap().0, Exchange::Crypto);
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[2]).unwrap().0, Exchange::Ftx);
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[3]).unwrap().0, Exchange::Binance);
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[8]).unwrap().0, Exchange::Huobi);
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[10]).unwrap().0, Exchange::Kucoin);
+        assert_eq!(ExchangeTypeRepr::try_from_bytes(&[11]).unwrap().0, Exchange::Okx);
+    }
+
+    #[test]
+    fn test_info_type_from_str() {
+        assert_eq!(InfoTypeRepr::try_from_str("asks").unwrap().0, InfoType::Asks);
+        assert_eq!(InfoTypeRepr::try_from_str("bids").unwrap().0, InfoType::Bids);
+    }
+   
+    #[test]
+    fn test_info_expr_from_byte() {
+        assert_eq!(InfoTypeRepr::try_from_bytes(&[1]).unwrap().0, InfoType::Asks);
+        assert_eq!(InfoTypeRepr::try_from_bytes(&[2]).unwrap().0, InfoType::Bids);
+    }
+}
