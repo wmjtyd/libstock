@@ -1,6 +1,6 @@
-# UNRELEASED
+# 0.2.0 (beta)
 
-## UNRELEASED - Breaking changes
+## 0.2.0 (beta) - Breaking changes
 
 - `ReceivedTimestamp` field is now represented as seconds to fit in `u64`.
 - `Symble` is now renamed to `Symbol`.
@@ -11,7 +11,7 @@
   - Replace your current code to the native method (`.to_be_bytes()`)
 - Removed and added some new unused error variants.
 
-## UNRELEASED - Features
+## 0.2.0 (beta) - Features
 
 - `data::orderbook`, `data::trade`: Use `BufReader` instead of our based-on-Atomic seek reader.
 - `data::orderbook`, `data::trade`: Use `data::fields` to serialize & deserialize.
@@ -29,16 +29,16 @@
 - `file::writer`: Add `tracing` log.
 - `file::writer`: Refactored for extensibility.
 
-## UNRELEASED - CI
+## 0.2.0 (beta) - CI
 
 - Also test if `cargo doc` can generate correct documentation.
 - Run `cargo clippy` and `cargo fmt --check`
 
-## UNRELEASED - Examples
+## 0.2.0 (beta) - Examples
 
 - Add a production example of `file::writer`.
 
-## UNRELEASED - Bug fixes
+## 0.2.0 (beta) - Bug fixes
 
 - `file::writer`: Don't create the directory if it has been existed.
 - `file::writer`: `.stop()` can't work properly.
