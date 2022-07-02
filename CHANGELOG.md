@@ -28,6 +28,7 @@
 - Add the encoder and decoder of `bbo` and `kline`.
 - `file::writer`: Add `tracing` log.
 - `file::writer`: Refactored for extensibility.
+- Change to wmjtyd's `crypto-crawler` and `crypto-msg-parser`.
 
 ## 0.2.0 (beta) - CI
 
