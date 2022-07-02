@@ -121,7 +121,7 @@ impl DataWriter {
 
     /// Spawn the writer daemon.
     pub async fn start(&self) -> WriteResult<JoinHandle<()>> {
-        let span = tracing::info_span!("DataWriter::start", id = self.writer_id.to_string());
+        let span = tracing::info_span!("DataWriter::start", id = self.writer_id.to_string().as_str());
 
         async move {
             let data_dir = Self::get_data_dir();
