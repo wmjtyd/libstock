@@ -7,7 +7,7 @@ async fn main() {
     let mut writer = DataWriter::new();
     tracing_subscriber::fmt::init();
 
-    let work = writer.start().await.expect("failed to start writer!");
+    let work = writer.start().await.expect("failed to start writer");
     
     writer.add(DataEntry {
        // It will be saved to './record/test20190101.csv'
@@ -16,11 +16,11 @@ async fn main() {
     
        // `.to_vec()` is needed to write it asynchoronously.
        data: b"OwO".to_vec(),
-    }).expect("failed to create writer!");
+    }).expect("failed to create writer");
 
-    tracing::info!("Wait 5 seconds...");
+    tracing::info!("Wait 5 seconds…");
     tokio::time::sleep(Duration::from_secs(5)).await;
     
-    writer.stop();
-    work.await.expect("failed to stop writer!");
+    writer.stop().expect("failed to send stop request");
+    work.await.expect("failed to stop writer");
 }

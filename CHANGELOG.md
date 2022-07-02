@@ -27,6 +27,7 @@
 - `data::types`: Add more exchanges, and add `PERIOD`.
 - Add the encoder and decoder of `bbo` and `kline`.
 - `file::writer`: Add `tracing` log.
+- `file::writer`: Refactored for extensibility.
 
 ## UNRELEASED - CI
 
@@ -40,3 +41,4 @@
 ## UNRELEASED - Bug fixes
 
 - `file::writer`: Don't create the directory if it has been existed.
+- `file::writer`: `.stop()` can't work properly.
