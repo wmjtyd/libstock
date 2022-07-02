@@ -1,7 +1,10 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use std::{fmt::Display, path::{Path, PathBuf}};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use flume::{Receiver, Sender};
 use tokio::{fs::OpenOptions, task::JoinHandle};
@@ -106,7 +109,10 @@ impl DataWriter {
     /// });
     /// ```
     pub fn add(&mut self, data: DataEntry) -> WriteResult<()> {
-        tracing::info!("Adding data {data} to writer {writer}", writer = self.writer_id);
+        tracing::info!(
+            "Adding data {data} to writer {writer}",
+            writer = self.writer_id
+        );
 
         self.sender
             .send(WriterAction::FileWrite(data))
@@ -116,44 +122,46 @@ impl DataWriter {
     /// Spawn the writer daemon.
     pub async fn start(&self) -> WriteResult<JoinHandle<()>> {
         let span = tracing::info_span!("DataWriter::start", id = self.writer_id.to_string());
-        
+
         async move {
             let data_dir = Self::get_data_dir();
             Self::create_data_dir(data_dir.as_path()).await?;
-    
+
             let receiver = self.receiver.clone();
 
             tracing::info!("Starting daemon…");
             let span = tracing::info_span!("daemon");
-            Ok(tokio::task::spawn(async move {
-                loop {
-                    let task = async {
-                        let action = receiver
-                            .recv_async()
-                            .await
-                            .map_err(DaemonError::RecvActionFailed)?;
+            Ok(tokio::task::spawn(
+                async move {
+                    loop {
+                        let task = async {
+                            let action = receiver
+                                .recv_async()
+                                .await
+                                .map_err(DaemonError::RecvActionFailed)?;
 
-                        Self::process_action(action).await
-                    };
+                            Self::process_action(action).await
+                        };
 
-                    if let Err(e) = task.await {
-                        match e {
-                            DaemonError::StopDaemon => {
-                                tracing::trace!("Received the forwarded “StopDaemon” request.");
-                                break;
-                            },
-                            _ => {
-                                tracing::error!("Error happened: {e}; skipping.");
-                                continue;
+                        if let Err(e) = task.await {
+                            match e {
+                                DaemonError::StopDaemon => {
+                                    tracing::trace!("Received the forwarded “StopDaemon” request.");
+                                    break;
+                                }
+                                _ => {
+                                    tracing::error!("Error happened: {e}; skipping.");
+                                    continue;
+                                }
                             }
                         }
-
                     }
                 }
-            }.instrument(span)))
+                .instrument(span),
+            ))
         }
-            .instrument(span)
-            .await
+        .instrument(span)
+        .await
     }
 
     /// Stop the writer daemon.
@@ -197,11 +205,11 @@ impl DataWriter {
                 tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
                 let path_to_write = get_ident_path(&identifier);
                 write_content(path_to_write, data.as_slice()).await?;
-            },
+            }
             WriterAction::Stop => {
                 tracing::debug!("Daemon has received stop signal. Exiting.");
                 return Err(DaemonError::StopDaemon);
-            },
+            }
         }
 
         Ok(())
