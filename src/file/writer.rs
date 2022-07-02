@@ -1,7 +1,7 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use std::fmt::Display;
+use std::{fmt::Display, path::{Path, PathBuf}};
 
 use flume::{Receiver, Sender};
 use tokio::{fs::OpenOptions, task::JoinHandle};
@@ -118,48 +118,22 @@ impl DataWriter {
         let span = tracing::info_span!("DataWriter::start", id = self.writer_id.to_string());
         
         async move {
-            let data_dir = get_data_directory();
-            tracing::info!("The files will be saved in: {}", data_dir.display());
-
-            if data_dir.exists() {
-                tracing::debug!("The data directory has been created. Ignoring.");
-            } else {
-                tracing::info!("Creating the data directory…");
-                tokio::fs::create_dir_all(get_data_directory())
-                    .await
-                    .map_err(WriteError::DataDirCreationFailed)?;
-            }
-
+            let data_dir = Self::get_data_dir();
+            Self::create_data_dir(data_dir.as_path()).await?;
+    
             let receiver = self.receiver.clone();
 
             tracing::info!("Starting daemon…");
+            let span = tracing::info_span!("daemon");
             Ok(tokio::task::spawn(async move {
                 loop {
                     let task = async {
-                        let request = receiver
+                        let action = receiver
                             .recv_async()
                             .await
                             .map_err(DaemonError::RecvActionFailed)?;
 
-                        match request {
-                            WriterAction::FileWrite(DataEntry { filename, data }) => {
-                                tracing::trace!("Received a data entry. Processing…");
-
-                                // Get the timestamp, and get the identifier.
-                                let identifier = get_ident(&filename, &get_timestamp());
-        
-                                // Write file to the specified path.
-                                tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
-                                let path_to_write = get_ident_path(&identifier);
-                                write_content(path_to_write, data.as_slice()).await?;
-                            },
-                            WriterAction::Stop => {
-                                tracing::debug!("Daemon has received stop signal. Exiting.");
-                                return Err(DaemonError::StopDaemon);
-                            },
-                        }
-
-                        Ok(())
+                        Self::process_action(action).await
                     };
 
                     if let Err(e) = task.await {
@@ -176,7 +150,7 @@ impl DataWriter {
 
                     }
                 }
-            }))
+            }.instrument(span)))
         }
             .instrument(span)
             .await
@@ -189,6 +163,48 @@ impl DataWriter {
         self.sender
             .send(WriterAction::Stop)
             .map_err(|_| WriteError::PushChannelFailed)
+    }
+
+    fn get_data_dir() -> PathBuf {
+        let data_dir = get_data_directory();
+        tracing::info!("The files will be saved in: {}", data_dir.display());
+
+        data_dir
+    }
+
+    async fn create_data_dir(data_dir: &Path) -> WriteResult<()> {
+        if data_dir.exists() {
+            tracing::debug!("The data directory has been created. Ignoring.");
+        } else {
+            tracing::info!("Creating the data directory…");
+            tokio::fs::create_dir_all(data_dir)
+                .await
+                .map_err(WriteError::DataDirCreationFailed)?;
+        }
+
+        Ok(())
+    }
+
+    async fn process_action(action: WriterAction) -> Result<(), DaemonError> {
+        match action {
+            WriterAction::FileWrite(DataEntry { filename, data }) => {
+                tracing::trace!("Received a data entry. Processing…");
+
+                // Get the timestamp, and get the identifier.
+                let identifier = get_ident(&filename, &get_timestamp());
+
+                // Write file to the specified path.
+                tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
+                let path_to_write = get_ident_path(&identifier);
+                write_content(path_to_write, data.as_slice()).await?;
+            },
+            WriterAction::Stop => {
+                tracing::debug!("Daemon has received stop signal. Exiting.");
+                return Err(DaemonError::StopDaemon);
+            },
+        }
+
+        Ok(())
     }
 }
 
