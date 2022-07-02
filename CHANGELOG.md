@@ -38,6 +38,7 @@
 ## 0.2.0 (beta) - Examples
 
 - Add a production example of `file::writer`.
+- (beta 4) `data::hex` add the testcase of `i8` → `u8` and `u8` → `i8`
 
 ## 0.2.0 (beta) - Bug fixes
 

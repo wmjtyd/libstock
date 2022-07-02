@@ -47,6 +47,13 @@ impl NumToBytesExt<5> for u32 {
     /// assert!(matches!(u32::encode_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
     /// assert!(matches!(u32::encode_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
     ///
+    /// // Encode a number string to i8 bytes.
+    /// {
+    ///     let encoded_u8 = u32::encode_bytes("10000000.99").unwrap();
+    ///     let encoded_i8 = unsafe { std::slice::from_raw_parts(encoded_u8.as_ptr() as *const i8, encoded_u8.len()) };
+    ///     assert_eq!(encoded_i8, &[59i8, -102, -54, 99, 2]);
+    /// }
+    ///
     /// assert!(matches!(
     ///     u32::encode_bytes("Hello!"),
     ///     Err(HexDataError::StrNumParseError(_))
@@ -101,6 +108,14 @@ impl NumToBytesExt<5> for u32 {
     ///     u32::decode_bytes(&[0, 7, 208, 16, 3]).to_string(),
     ///     "512.016"
     /// );
+    ///
+    /// // Decode a i8 bytes to a number string
+    /// {
+    ///     let raw_i8 = [59i8, -102, -54, 99, 2];
+    ///     let raw_u8: &[u8; 5] = unsafe { std::slice::from_raw_parts(raw_i8.as_ptr() as *const u8, raw_i8.len()) }
+    ///         .try_into().expect("failed to convert [i8; 5] to [u8; 5]");
+    ///     assert_eq!(u32::decode_bytes(raw_u8).to_string(), "10000000.99");
+    /// }
     /// ```
     fn decode_bytes(value: &[u8; 5]) -> Decimal {
         let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 0, 4]) as i64;
