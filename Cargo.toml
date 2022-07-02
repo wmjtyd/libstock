@@ -28,7 +28,12 @@ strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.31"
 tokio = { version = "1.19.2", features = ["rt", "fs", "io-util"] }
 tracing = "0.1.35"
+uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
 
 [features]
 default = ["crypto"]
 crypto = ["dep:crypto-msg-parser", "dep:crypto-crawler"]
+
+[dev-dependencies]
+tracing-subscriber = "0.3.14"
+tokio = { version = "1.19.2", features = ["rt", "fs", "io-util", "time"] }

@@ -1,8 +1,12 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
+use std::fmt::Display;
+
 use flume::{Receiver, Sender};
 use tokio::{fs::OpenOptions, task::JoinHandle};
+use tracing::Instrument;
+use uuid::Uuid;
 
 use crate::flag::BinaryFlag;
 
@@ -35,6 +39,12 @@ pub struct DataEntry {
     pub data: Vec<u8>,
 }
 
+impl Display for DataEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({} bytes)", self.filename, self.data.len())
+    }
+}
+
 /// The writer daemon to write data and place file automatically,
 /// without worrying about managing the path; and asynchronoly,
 /// with a synchoronous `.add()` API.
@@ -57,6 +67,8 @@ pub struct DataEntry {
 /// });
 /// ```
 pub struct DataWriter {
+    writer_id: Uuid,
+
     run_flag: BinaryFlag,
     sender: Sender<DataEntry>,
     receiver: Receiver<DataEntry>,
@@ -87,6 +99,8 @@ impl DataWriter {
     /// });
     /// ```
     pub fn add(&mut self, data: DataEntry) -> WriteResult<()> {
+        tracing::info!("Adding data {data} to writer {writer}", writer = self.writer_id);
+
         self.sender
             .send(data)
             .map_err(|_| WriteError::PushChannelFailed)
@@ -94,47 +108,67 @@ impl DataWriter {
 
     /// Spawn the writer daemon.
     pub async fn start(&self) -> WriteResult<JoinHandle<()>> {
-        // Create the directory to place the files in.
-        tokio::fs::create_dir_all(get_data_directory())
-            .await
-            .map_err(WriteError::DataDirCreationFailed)?;
+        let span = tracing::info_span!("DataWriter::start", id = self.writer_id.to_string());
+        
+        async move {
+            let data_dir = get_data_directory();
+            tracing::info!("The files will be saved in: {}", data_dir.display());
 
-        let run_flag = self.run_flag.clone();
-        let receiver = self.receiver.clone();
-
-        Ok(tokio::task::spawn(async move {
-            loop {
-                if !run_flag.is_running() {
-                    break;
-                }
-
-                let task = async {
-                    // Get the data entry.
-                    let DataEntry { filename, data } = receiver
-                        .recv_async()
-                        .await
-                        .map_err(WriteError::RecvDataFailed)?;
-
-                    // Get the timestamp, and get the identifier.
-                    let identifier = get_ident(&filename, &get_timestamp());
-
-                    // Write file to the specified path.
-                    let path_to_write = get_ident_path(&identifier);
-                    write_content(path_to_write, data.as_slice()).await?;
-
-                    Ok::<(), WriteError>(())
-                };
-
-                if let Err(e) = task.await {
-                    tracing::error!("Error happened: {e}; skipping.");
-                    continue;
-                }
+            if data_dir.exists() {
+                tracing::debug!("The data directory has been created. Ignoring.");
+            } else {
+                tracing::info!("Creating the data directory…");
+                tokio::fs::create_dir_all(get_data_directory())
+                    .await
+                    .map_err(WriteError::DataDirCreationFailed)?;
             }
-        }))
+
+            let run_flag = self.run_flag.clone();
+            let receiver = self.receiver.clone();
+
+            tracing::info!("Starting daemon…");
+            Ok(tokio::task::spawn(async move {
+                loop {
+                    if !run_flag.is_running() {
+                        tracing::debug!("Daemon has received stop signal. Exiting.");
+                        break;
+                    }
+
+                    let task = async {
+                        // Get the data entry.
+                        let DataEntry { filename, data } = receiver
+                            .recv_async()
+                            .await
+                            .map_err(WriteError::RecvDataFailed)?;
+
+                        tracing::trace!("Received a data entry. Processing…");
+
+                        // Get the timestamp, and get the identifier.
+                        let identifier = get_ident(&filename, &get_timestamp());
+
+                        // Write file to the specified path.
+                        tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
+                        let path_to_write = get_ident_path(&identifier);
+                        write_content(path_to_write, data.as_slice()).await?;
+
+                        Ok::<(), WriteError>(())
+                    };
+
+                    if let Err(e) = task.await {
+                        tracing::error!("Error happened: {e}; skipping.");
+                        continue;
+                    }
+                }
+            }))
+        }
+            .instrument(span)
+            .await
     }
 
     /// Stop the writer daemon.
     pub fn stop(&self) {
+        tracing::info!("Stopping writer {writer}…", writer = self.writer_id);
+
         self.run_flag.set_running(false);
     }
 }
@@ -144,6 +178,8 @@ impl Default for DataWriter {
         let (sender, receiver) = flume::unbounded();
 
         Self {
+            // Generate a writer ID for debugging.
+            writer_id: Uuid::new_v4(),
             sender,
             receiver,
             run_flag: Default::default(),
