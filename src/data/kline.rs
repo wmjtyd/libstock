@@ -30,10 +30,10 @@ pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
     // This data should have 47 bytes.
     let mut bytes = Vec::<u8>::with_capacity(47);
 
-    // 1. 交易所时间戳: 8 字节
+    // 1. 交易所时间戳: 6 字节
     bytes.extend_from_slice(&ExchangeTimestampRepr(kline.timestamp).to_bytes());
 
-    // 2. 收到时间戳: 8 字节
+    // 2. 收到时间戳: 6 字节
     bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
 
     // 3. EXCHANGE: 1 字节
@@ -76,10 +76,10 @@ pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
 pub fn decode_kline(payload: &[u8]) -> KlineResult<KlineMsg> {
     let mut reader = BufReader::new(payload);
 
-    // 1. 交易所时间戳: 8 字节时间戳
+    // 1. 交易所时间戳: 6 字节时间戳
     let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
-    // 2. 收到时间戳: 8 字节时间戳 (NOT USED)
+    // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
     reader.consume(8);
     // let received_timestamp = ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 

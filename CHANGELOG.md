@@ -2,13 +2,13 @@
 
 ## 0.2.0 (beta) - Breaking changes
 
-- `ReceivedTimestamp` field is now represented as seconds to fit in `u64`.
 - `Symble` is now renamed to `Symbol`.
 - `Symbol` field is now serialized as the big endian representation of `u8`.
 - Map `EXCHANGE` and `INFOTYPE` are replaced to the enumeration `Exchange` and `InfoType`.
   - Use `strum` to provide the map-like function.
 - Some methods in `data::hex` are removed.
   - Replace your current code to the native method (`.to_be_bytes()`)
+  - (beta 5) For UNIX timestamp, use `unix_ms_to_six_byte_hex` and `six_byte_hex_to_unix_ms` instead.
 - Removed and added some new unused error variants.
 
 ## 0.2.0 (beta) - Features
@@ -29,6 +29,7 @@
 - `file::writer`: Add `tracing` log.
 - `file::writer`: Refactored for extensibility.
 - Change to wmjtyd's `crypto-crawler` and `crypto-msg-parser`.
+- (beta 5) Add methods to serialize and deserialize UNIX timestamp to 6-byte `u64`.
 
 ## 0.2.0 (beta) - CI
 
@@ -46,3 +47,4 @@
 - `file::writer`: `.stop()` can't work properly.
 - (beta 4) `{InfoTypeExpr,ExchangeTypeRepr}::try_from_str` should be from lowercase
   - Added the test case of this.
+- (beta 5) UNIX timestamp should serialize and deserialize to 6-byte `u64`.

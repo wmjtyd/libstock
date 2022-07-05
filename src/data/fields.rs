@@ -10,11 +10,11 @@ use crypto_crawler::{MarketType, MessageType};
 use crypto_msg_parser::TradeSide;
 use either::Either;
 
-use super::types::{
+use super::{types::{
     bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
     bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
     SYMBOL_PAIR,
-};
+}, hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex}};
 
 pub trait ReadExt: Read {
     /// Read data to a fixed array.
@@ -29,7 +29,7 @@ pub trait ReadExt: Read {
 
 impl<R: Read> ReadExt for BufReader<R> {}
 
-/// The timestamp of exchange.
+/// The timestamp of exchange (6 byte).
 pub struct ExchangeTimestampRepr(pub i64);
 
 impl ExchangeTimestampRepr {
@@ -37,12 +37,12 @@ impl ExchangeTimestampRepr {
         Ok(Self::from_bytes(&reader.read_exact_array()?))
     }
 
-    pub fn from_bytes(bytes: &[u8; 8]) -> Self {
-        Self(i64::from_be_bytes(*bytes))
+    pub fn from_bytes(bytes: &[u8; 6]) -> Self {
+        Self(six_byte_hex_to_unix_ms(bytes) as i64)
     }
 
-    pub fn to_bytes(&self) -> [u8; 8] {
-        self.0.to_be_bytes()
+    pub fn to_bytes(&self) -> [u8; 6] {
+        unix_ms_to_six_byte_hex(self.0 as u64)
     }
 }
 
@@ -53,7 +53,9 @@ impl ReceivedTimestampRepr {
     /// Create a new `ReceivedTimestamp` from the current time.
     pub fn try_new_from_now() -> StructureResult<Self> {
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let now_sec = now.as_secs();
+
+        debug_assert!(u64::try_from(now.as_millis()).is_ok());
+        let now_sec = now.as_millis() as u64;
 
         Ok(Self(now_sec))
     }
@@ -62,12 +64,12 @@ impl ReceivedTimestampRepr {
         Ok(Self::from_bytes(&reader.read_exact_array()?))
     }
 
-    pub fn from_bytes(bytes: &[u8; 8]) -> Self {
-        Self(u64::from_be_bytes(*bytes))
+    pub fn from_bytes(bytes: &[u8; 6]) -> Self {
+        Self(six_byte_hex_to_unix_ms(bytes))
     }
 
-    pub fn to_bytes(&self) -> [u8; 8] {
-        self.0.to_be_bytes()
+    pub fn to_bytes(&self) -> [u8; 6] {
+        unix_ms_to_six_byte_hex(self.0)
     }
 }
 
