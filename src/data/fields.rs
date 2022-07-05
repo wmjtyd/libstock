@@ -10,11 +10,14 @@ use crypto_crawler::{MarketType, MessageType};
 use crypto_msg_parser::TradeSide;
 use either::Either;
 
-use super::{types::{
-    bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
-    bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
-    SYMBOL_PAIR,
-}, hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex}};
+use super::{
+    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex},
+    types::{
+        bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
+        bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
+        SYMBOL_PAIR,
+    },
+};
 
 pub trait ReadExt: Read {
     /// Read data to a fixed array.
