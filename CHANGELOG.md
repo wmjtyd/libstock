@@ -1,17 +1,34 @@
 # libstock's changelog
 
-## Unreleased: 0.2.1
+## Unreleased: 0.3.0
 
-### Unreleased: 0.2.1 – Features
+### Unreleased: 0.3.0 – Breaking changes
 
-- `slack`: for sending notifications to Slack with Slack Hook.
-- `message`: a basic encap of [`Socket`] for subscribing and publishing.
+- `file/reader`: `open()` returns `Result` instead of `Option` now.
+  - For better backtrace
+- `file/writer`: Set the size of the length field of written data structure to 2 bytes.
+  - It used to be 'usize'. It is an implementation mistake.
 
-### Unreleased: 0.2.1 – Chores
+### Unreleased: 0.3.0 – Features
+
+- `slack`: For sending notifications to Slack with Slack Hook.
+- `message`: A basic encap of [`Socket`] for subscribing and publishing.
+
+### Unreleased: 0.3.0 – Bug fixes
+
+- `file/reader`: Make `read()` returns the exact data
+  - Currently, it always returns `[]` due to an implementation mistake.
+
+### Unreleased: 0.3.0 – Tests
+
+- `file`: Add integration test for writer & reader
+
+### Unreleased: 0.3.0 – Chores
 
 - Upgrade `crypto-crawler-rs` to `d45528283b387bbe6c46507d7837bf1dd229ff6d`
+- `file/reader`: add `info` logger on new() for better debugging
 
-### Unreleased: 0.2.1 – CI
+### Unreleased: 0.3.0 – CI
 
 - Install `nanomsg` for `message` test.
 
