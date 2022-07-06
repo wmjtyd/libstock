@@ -27,12 +27,9 @@ impl Iterator for FileReader {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut data_len_section = [0u8; 2];
-        if let Ok(data_size) = self.file.read(&mut data_len_section) {
-            if 2 != data_size {
-                return None;
-            }
+        if let Ok(()) = self.file.read_exact(&mut data_len_section) {
             let data_len = u16::from_be_bytes(data_len_section) as usize;
-            let mut data = Vec::<u8>::with_capacity(data_len);
+            let mut data = vec![0u8; data_len];
 
             if let Err(e) = self.file.read_exact(&mut data) {
                 tracing::error!("Failed to read the complete data: {e}. Returning None.");
