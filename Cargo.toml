@@ -35,13 +35,13 @@ derive_builder = "0.11.2"
 version = "=4.4.4"
 optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
-rev = "bb8d89563e6add82a0825f7b2a47d58c42d423cc"
+rev = "d45528283b387bbe6c46507d7837bf1dd229ff6d"
 
 [dependencies.crypto-msg-parser]
 version = "=2.4.12"
 optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
-rev = "bb8d89563e6add82a0825f7b2a47d58c42d423cc"
+rev = "d45528283b387bbe6c46507d7837bf1dd229ff6d"
 
 [features]
 default = ["crypto", "message", "slack"]

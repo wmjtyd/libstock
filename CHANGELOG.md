@@ -7,6 +7,10 @@
 - `slack`: for sending notifications to Slack with Slack Hook.
 - `message`: a basic encap of [`Socket`] for subscribing and publishing.
 
+### Unreleased: 0.2.1 – Chores
+
+- Upgrade `crypto-crawler-rs` to `d45528283b387bbe6c46507d7837bf1dd229ff6d`
+
 ## 0.2.0
 
 ### 0.2.0 - Breaking changes
