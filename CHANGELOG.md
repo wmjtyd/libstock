@@ -11,6 +11,10 @@
 
 - Upgrade `crypto-crawler-rs` to `d45528283b387bbe6c46507d7837bf1dd229ff6d`
 
+### Unreleased: 0.2.1 – CI
+
+- Install `nanomsg` for `message` test.
+
 ## 0.2.0
 
 ### 0.2.0 - Breaking changes
