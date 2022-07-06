@@ -10,14 +10,14 @@ pub struct FileReader {
 }
 
 impl FileReader {
-    pub fn new(filename: String, day: i64) -> Option<FileReader> {
+    pub fn new(filename: String, day: i64) -> std::io::Result<FileReader> {
         let time = Local::now() - Duration::days(day);
         let timestamp = fmt_timestamp(&time);
 
         let identifier = get_ident(&filename, &timestamp);
         let path = get_ident_path(&identifier);
 
-        File::open(path).ok().map(|file| FileReader { file })
+        File::open(path).map(|file| FileReader { file })
     }
 }
 
