@@ -5,22 +5,22 @@ use nanomsg::Socket;
 use std::io::{Read, Write};
 use std::ops::Deref;
 
+pub use nanomsg::Error as MessageError;
 pub use nanomsg::Protocol as NanomsgProtocol;
 pub use nanomsg::Result as MessageResult;
-pub use nanomsg::Error as MessageError;
 
 /// A basic encap of [`Socket`] for subscribing and publishing.
-/// 
+///
 /// It will automatically bind the created socket to the specified path.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use std::io::Write;
 /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
-/// 
+///
 /// let nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
-/// 
+///
 /// if let Ok(mut nanomsg) = nanomsg {
 ///   nanomsg.write_all(b"Hello World!").ok();
 /// }
@@ -31,12 +31,12 @@ pub struct Nanomsg {
 
 impl Nanomsg {
     /// Construct a [`Nanomsg`] instance.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
-    /// 
+    ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
     /// let pub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
     /// let pub_nanomsg = Nanomsg::new_publish("/tmp/test.socket");
@@ -46,7 +46,7 @@ impl Nanomsg {
     /// let sub_nanomsg = Nanomsg::new_subscribe("/tmp/test.socket");
     /// ```
     pub fn new(path: &str, protocol: NanomsgProtocol) -> MessageResult<Self> {
-        use NanomsgProtocol::{Sub, Pub};
+        use NanomsgProtocol::{Pub, Sub};
 
         let mut socket = match protocol {
             Sub | Pub => Socket::new(protocol)?,
@@ -54,17 +54,17 @@ impl Nanomsg {
         };
 
         socket.bind(path)?;
-        
+
         Ok(Self { socket })
     }
 
     /// Construct a publishable [`Nanomsg`] instance.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
-    /// 
+    ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
     /// let pub_nanomsg = Nanomsg::new_publish("/tmp/test.socket");
     /// let pub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
@@ -74,12 +74,12 @@ impl Nanomsg {
     }
 
     /// Construct a subscribable [`Nanomsg`] instance.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
-    /// 
+    ///
     /// // The both are equivalent: It will create a subscribable Nanomsg socket.
     /// let sub_nanomsg = Nanomsg::new_subscribe("/tmp/test.socket");
     /// let sub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Sub);
