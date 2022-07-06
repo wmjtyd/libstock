@@ -13,7 +13,8 @@ impl FileReader {
     pub fn new(filename: String, day: i64) -> std::io::Result<FileReader> {
         let time = Local::now() - Duration::days(day);
         let timestamp = fmt_timestamp(&time);
-
+        tracing::info!("Creating a writer to read {filename}, timestamp {timestamp}");
+        
         let identifier = get_ident(&filename, &timestamp);
         let path = get_ident_path(&identifier);
 
