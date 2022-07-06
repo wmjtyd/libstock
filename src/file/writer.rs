@@ -243,7 +243,7 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
         .map_err(WriteError::FileOpenFailed)?;
 
     // First, write length to file.
-    let data_len = data.len().to_be_bytes();
+    let data_len = (data.len() as u16).to_be_bytes();
     file.write_all(&data_len)
         .await
         .map_err(WriteError::LengthWriteFailed)?;
