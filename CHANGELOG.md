@@ -1,6 +1,6 @@
-# 0.2.0 (beta)
+# 0.2.0
 
-## 0.2.0 (beta) - Breaking changes
+## 0.2.0 - Breaking changes
 
 - `Symble` is now renamed to `Symbol`.
 - `Symbol` field is now serialized as the big endian representation of `u8`.
@@ -11,7 +11,7 @@
   - (beta 5) For UNIX timestamp, use `unix_ms_to_six_byte_hex` and `six_byte_hex_to_unix_ms` instead.
 - Removed and added some new unused error variants.
 
-## 0.2.0 (beta) - Features
+## 0.2.0 - Features
 
 - `data::orderbook`, `data::trade`: Use `BufReader` instead of our based-on-Atomic seek reader.
 - `data::orderbook`, `data::trade`: Use `data::fields` to serialize & deserialize.
@@ -31,17 +31,17 @@
 - Change to wmjtyd's `crypto-crawler` and `crypto-msg-parser`.
 - (beta 5) Add methods to serialize and deserialize UNIX timestamp to 6-byte `u64`.
 
-## 0.2.0 (beta) - CI
+## 0.2.0 - CI
 
 - Also test if `cargo doc` can generate correct documentation.
 - Run `cargo clippy` and `cargo fmt --check`
 
-## 0.2.0 (beta) - Examples
+## 0.2.0 - Examples
 
 - Add a production example of `file::writer`.
 - (beta 4) `data::hex` add the testcase of `i8` → `u8` and `u8` → `i8`
 
-## 0.2.0 (beta) - Bug fixes
+## 0.2.0 - Bug fixes
 
 - `file::writer`: Don't create the directory if it has been existed.
 - `file::writer`: `.stop()` can't work properly.
