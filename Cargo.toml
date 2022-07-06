@@ -28,6 +28,7 @@ tokio = { version = "1.19.2", features = ["rt", "fs", "io-util"] }
 tracing = "0.1.35"
 uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
 slack-hook = { version = "0.8.0", optional = true }
+nanomsg = { version = "0.7.2", optional = true }
 derive_builder = "0.11.2"
 
 [dependencies.crypto-crawler]
@@ -43,8 +44,9 @@ git = "https://github.com/wmjtyd/crypto-crawler-rs"
 rev = "bb8d89563e6add82a0825f7b2a47d58c42d423cc"
 
 [features]
-default = ["crypto", "slack"]
+default = ["crypto", "message", "slack"]
 crypto = ["dep:crypto-msg-parser", "dep:crypto-crawler"]
+message = ["dep:nanomsg"]
 slack = ["dep:slack-hook"]
 
 [dev-dependencies]

@@ -5,6 +5,7 @@
 ### Unreleased: 0.2.1 – Features
 
 - `slack`: for sending notifications to Slack with Slack Hook.
+- `message`: a basic encap of [`Socket`] for subscribing and publishing.
 
 ## 0.2.0
 
