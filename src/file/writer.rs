@@ -253,6 +253,9 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
         .await
         .map_err(WriteError::DataWriteFailed)?;
 
+    // Flush the buffer.
+    file.flush().await.map_err(WriteError::FlushFailed)?;
+
     Ok(())
 }
 
@@ -272,6 +275,9 @@ pub enum WriteError {
 
     #[error("failed to write data to file: {0}")]
     DataWriteFailed(tokio::io::Error),
+
+    #[error("failed to flush buffer: {0}")]
+    FlushFailed(tokio::io::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
