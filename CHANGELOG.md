@@ -19,6 +19,7 @@
 - `file/reader`: Make `read()` returns the exact data
   - Currently, it always returns `[]` due to an implementation mistake.
 - `file/writer`: Flush buffer after the data written ended.
+- (beta 2) `message`: use `connect` instead of `bind` for Sub
 
 ### Unreleased: 0.3.0 – Tests
 

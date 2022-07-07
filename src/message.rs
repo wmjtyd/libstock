@@ -48,12 +48,19 @@ impl Nanomsg {
     pub fn new(path: &str, protocol: NanomsgProtocol) -> MessageResult<Self> {
         use NanomsgProtocol::{Pub, Sub};
 
-        let mut socket = match protocol {
-            Sub | Pub => Socket::new(protocol)?,
+        let socket = match protocol {
+            Sub => {
+                let mut s = Socket::new(protocol)?;
+                s.connect(path)?;
+                s
+            },
+            Pub => {
+                let mut s = Socket::new(protocol)?;
+                s.bind(path)?;
+                s
+            },
             _ => panic!("unsupported protocol"),
         };
-
-        socket.bind(path)?;
 
         Ok(Self { socket })
     }
