@@ -1,4 +1,4 @@
-name: Compile & Test documenting libstock
+name: Test documenting libstock
 
 on:
   push:
@@ -15,9 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --verbose
       - name: Trying to generate docs
-        run: cargo doc --verbose
+        run: cargo doc
         env:
           RUSTDOCFLAGS: "-Dwarnings"
