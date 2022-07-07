@@ -3,7 +3,7 @@
 use nanomsg::Socket;
 
 use std::io::{Read, Write};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub use nanomsg::Error as MessageError;
 pub use nanomsg::Protocol as NanomsgProtocol;
@@ -102,6 +102,12 @@ impl Deref for Nanomsg {
     /// Get the underlying [`Socket`] instance.
     fn deref(&self) -> &Self::Target {
         &self.socket
+    }
+}
+
+impl DerefMut for Nanomsg {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.socket
     }
 }
 

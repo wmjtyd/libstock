@@ -13,6 +13,7 @@
 
 - `slack`: For sending notifications to Slack with Slack Hook.
 - `message`: A basic encap of [`Socket`] for subscribing and publishing.
+  - (beta 2) implement DerefMut to `Socket` for `message`
 
 ### Unreleased: 0.3.0 – Bug fixes
 
