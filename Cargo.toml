@@ -30,6 +30,7 @@ uuid = { version = "1.1.2", features = ["v4", "fast-rng"] }
 slack-hook = { version = "0.8.0", optional = true }
 nanomsg = { version = "0.7.2", optional = true }
 derive_builder = "0.11.2"
+zmq = { version = "0.9.2", optional = true }
 
 [dependencies.crypto-crawler]
 version = "=4.4.4"
@@ -46,7 +47,10 @@ rev = "d45528283b387bbe6c46507d7837bf1dd229ff6d"
 [features]
 default = ["crypto", "message", "slack"]
 crypto = ["dep:crypto-msg-parser", "dep:crypto-crawler"]
-message = ["dep:nanomsg"]
+message = ["nanomsg", "zeromq"]
+nanomsg = ["dep:nanomsg"]
+zeromq = ["zmq"]
+vendored-zeromq = ['zmq/vendored']
 slack = ["dep:slack-hook"]
 
 [dev-dependencies]

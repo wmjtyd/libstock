@@ -1,6 +1,9 @@
 //! The orderbook-related operations.
 
-use std::{collections::HashMap, io::{BufReader, BufRead}};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader},
+};
 
 use crypto_msg_parser::{Order, OrderBookMsg};
 use rust_decimal::prelude::ToPrimitive;

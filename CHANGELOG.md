@@ -12,7 +12,7 @@
 ### Unreleased: 0.3.0 – Features
 
 - `slack`: For sending notifications to Slack with Slack Hook.
-- `message`: A basic encap of [`Socket`] for subscribing and publishing.
+- `message`: A basic encap of `nanomsg` and `zeromq` for subscribing and publishing.
   - (beta 2) implement DerefMut to `Socket` for `message`
 
 ### Unreleased: 0.3.0 – Bug fixes
@@ -25,7 +25,8 @@
 
 ### Unreleased: 0.3.0 – Tests
 
-- `file`: Add integration test for writer & reader
+<!-- <!> has been disabled by default. -->
+<!-- - `file`: Add integration test for writer & reader -->
 - Add encode/decode tests to `data/bbo`
   - _WIP:_ add other encode/decode tests to `data/*`!
 
