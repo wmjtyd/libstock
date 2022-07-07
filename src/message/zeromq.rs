@@ -1,4 +1,4 @@
-//! A basic encap methods of [`zeromq`].
+//! A basic encap methods of [`zmq`].
 
 use zmq::{Context, Socket};
 
