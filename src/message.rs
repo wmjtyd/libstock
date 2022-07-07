@@ -126,3 +126,29 @@ impl Write for Nanomsg {
         self.socket.flush()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::{Write, Read};
+
+    #[test]
+    fn test_nanomsg_pub_sub() {
+        const IPC_PATH: &str = "ipc:///tmp/test.ipc";
+        let mut pub_nanomsg = super::Nanomsg::new_publish(IPC_PATH)
+            .expect("failed to create Nanomsg publish socket");
+        let mut sub_nanomsg = super::Nanomsg::new_subscribe(IPC_PATH)
+            .expect("failed to create Nanomsg subscribe socket");
+        
+        sub_nanomsg.subscribe(b"").expect("failed to subscribe ''");
+
+        let content = b"Hello, World!";
+        let mut recv_buf = [0u8; 13];
+
+        pub_nanomsg.write_all(content).expect("failed to write to pub_nanomsg");
+        pub_nanomsg.flush().expect("failed to flush pub_nanomsg");
+        let written = sub_nanomsg.read(&mut recv_buf).expect("failed to read from sub_nanomsg");
+
+        assert_eq!(content, &recv_buf);
+        assert_eq!(written, content.len());
+    }
+}
