@@ -26,6 +26,8 @@
 ### Unreleased: 0.3.0 – Tests
 
 - `file`: Add integration test for writer & reader
+- Add encode/decode tests to `data/bbo`
+  - _WIP:_ add other encode/decode tests to `data/*`!
 
 ### Unreleased: 0.3.0 – Chores
 

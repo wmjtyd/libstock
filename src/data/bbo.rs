@@ -132,3 +132,91 @@ pub enum BboError {
 }
 
 pub type BboResult<T> = Result<T, BboError>;
+
+#[cfg(test)]
+mod tests {
+    use crypto_crawler::MarketType;
+    use crypto_msg_parser::BboMsg;
+
+    use super::{decode_bbo, encode_bbo};
+
+    #[test]
+    fn test_bbo_encode_decode() {
+        let payload = BboMsg {
+            exchange: "crypto".into(),
+            market_type: crypto_crawler::MarketType::Spot,
+            symbol: "1".into(),
+            pair: "BTC/USDT".into(),
+            msg_type: crypto_crawler::MessageType::BBO,
+            timestamp: 12345678,
+            json: "".into(),
+            bid_price: 1.0,
+            bid_quantity_base: 2.0,
+            bid_quantity_quote: 0.0,
+            bid_quantity_contract: None,
+            ask_price: 4.0,
+            ask_quantity_base: 5.0,
+            ask_quantity_quote: 0.0,
+            ask_quantity_contract: None,
+            id: Some(114514),
+        };
+
+        let encoded = encode_bbo(&payload).expect("encode failed");
+        let decoded = decode_bbo(&encoded).expect("decode failed");
+
+        assert_eq!(payload.exchange, decoded.exchange);
+        assert_eq!(payload.market_type, decoded.market_type);
+        assert_eq!(payload.symbol, decoded.symbol);
+        assert_eq!(payload.pair, decoded.pair);
+        assert_eq!(payload.msg_type, decoded.msg_type);
+        assert_eq!(payload.timestamp, decoded.timestamp);
+        // assert_eq!(payload.json, decoded.json);
+        assert_eq!(payload.bid_price, decoded.bid_price);
+        assert_eq!(payload.bid_quantity_base, decoded.bid_quantity_base);
+        // assert_eq!(payload.bid_quantity_quote, decoded.bid_quantity_quote);
+        assert_eq!(payload.ask_price, decoded.ask_price);
+        assert_eq!(payload.ask_quantity_base, decoded.ask_quantity_base);
+        // assert_eq!(payload.ask_quantity_quote, decoded.ask_quantity_quote);
+        // assert_eq!(payload.id, decoded.id);
+    }
+
+    #[test]
+    fn test_bbo_encode_decode_unknown_markettype() {
+        let payload = BboMsg {
+            exchange: "crypto".into(),
+            market_type: crypto_crawler::MarketType::AmericanOption,
+            symbol: "1".into(),
+            pair: "BTC/USDT".into(),
+            msg_type: crypto_crawler::MessageType::BBO,
+            timestamp: 12345678,
+            json: "".into(),
+            bid_price: 1.0,
+            bid_quantity_base: 2.0,
+            bid_quantity_quote: 3.0,
+            bid_quantity_contract: None,
+            ask_price: 4.0,
+            ask_quantity_base: 5.0,
+            ask_quantity_quote: 6.0,
+            ask_quantity_contract: None,
+            id: Some(114514),
+        };
+
+        let encoded = encode_bbo(&payload).expect("encode failed");
+        let decoded = decode_bbo(&encoded).expect("decode failed");
+
+        assert_eq!(payload.exchange, decoded.exchange);
+        assert_eq!(MarketType::Unknown, decoded.market_type);
+        assert_eq!(payload.symbol, decoded.symbol);
+        assert_eq!(payload.pair, decoded.pair);
+        assert_eq!(payload.msg_type, decoded.msg_type);
+        assert_eq!(payload.timestamp, decoded.timestamp);
+        // assert_eq!(payload.json, decoded.json);
+        assert_eq!(payload.bid_price, decoded.bid_price);
+        assert_eq!(payload.bid_quantity_base, decoded.bid_quantity_base);
+        // assert_eq!(payload.bid_quantity_quote, decoded.bid_quantity_quote);
+        assert_eq!(payload.ask_price, decoded.ask_price);
+        assert_eq!(payload.ask_quantity_base, decoded.ask_quantity_base);
+        // assert_eq!(payload.ask_quantity_quote, decoded.ask_quantity_quote);
+        // assert_eq!(payload.id, decoded.id);
+    }
+}
