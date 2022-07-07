@@ -1,9 +1,6 @@
 //! The orderbook-related operations.
 
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader},
-};
+use std::{collections::HashMap, io::{BufReader, BufRead}};
 
 use crypto_msg_parser::{Order, OrderBookMsg};
 use rust_decimal::prelude::ToPrimitive;
@@ -103,8 +100,7 @@ pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
     let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
     // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    reader.consume(8);
-    // let received_timestamp = ReceivedTimestampRepr::try_from_reader(&mut reader)?;
+    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 
     // 3. EXCHANGE: 1 字节信息标识
     let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;

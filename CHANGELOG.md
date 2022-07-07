@@ -21,6 +21,7 @@
   - Currently, it always returns `[]` due to an implementation mistake.
 - `file/writer`: Flush buffer after the data written ended.
 - (beta 2) `message`: use `connect` instead of `bind` for Sub
+- `data/*/decode`: `ReceivedTimestampRepr` should be 6 bytes instead of 8 bytes.
 
 ### Unreleased: 0.3.0 – Tests
 

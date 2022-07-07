@@ -1,6 +1,6 @@
 //! The bbo-related operations.
 
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 
 use crypto_msg_parser::BboMsg;
 use rust_decimal::prelude::ToPrimitive;
@@ -55,7 +55,7 @@ pub fn decode_bbo(payload: &[u8]) -> BboResult<BboMsg> {
     let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
     // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    reader.consume(8);
+    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 
     // 3. EXCHANGE: 1 字节信息标识
     let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
