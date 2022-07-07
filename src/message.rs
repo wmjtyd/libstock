@@ -19,7 +19,7 @@ pub use nanomsg::Result as MessageResult;
 /// use std::io::Write;
 /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
 ///
-/// let nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
+/// let nanomsg = Nanomsg::new("ipc:///tmp/test.ipc", NanomsgProtocol::Pub);
 ///
 /// if let Ok(mut nanomsg) = nanomsg {
 ///   nanomsg.write_all(b"Hello World!").ok();
@@ -38,12 +38,12 @@ impl Nanomsg {
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
     ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
-    /// let pub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
-    /// let pub_nanomsg = Nanomsg::new_publish("/tmp/test.socket");
+    /// let pub_nanomsg = Nanomsg::new("ipc:///tmp/test.ipc", NanomsgProtocol::Pub);
+    /// let pub_nanomsg = Nanomsg::new_publish("ipc:///tmp/test.ipc");
     ///
     /// // The both are equivalent: It will create a subscribable Nanomsg socket.
-    /// let sub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Sub);
-    /// let sub_nanomsg = Nanomsg::new_subscribe("/tmp/test.socket");
+    /// let sub_nanomsg = Nanomsg::new("ipc:///tmp/test.ipc", NanomsgProtocol::Sub);
+    /// let sub_nanomsg = Nanomsg::new_subscribe("ipc:///tmp/test.ipc");
     /// ```
     pub fn new(path: &str, protocol: NanomsgProtocol) -> MessageResult<Self> {
         use NanomsgProtocol::{Pub, Sub};
@@ -73,8 +73,8 @@ impl Nanomsg {
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
     ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
-    /// let pub_nanomsg = Nanomsg::new_publish("/tmp/test.socket");
-    /// let pub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Pub);
+    /// let pub_nanomsg = Nanomsg::new_publish("ipc:///tmp/test.ipc");
+    /// let pub_nanomsg = Nanomsg::new("ipc:///tmp/test.ipc", NanomsgProtocol::Pub);
     /// ```
     pub fn new_publish(path: &str) -> MessageResult<Self> {
         Self::new(path, NanomsgProtocol::Pub)
@@ -88,8 +88,8 @@ impl Nanomsg {
     /// use wmjtyd_libstock::message::{Nanomsg, NanomsgProtocol};
     ///
     /// // The both are equivalent: It will create a subscribable Nanomsg socket.
-    /// let sub_nanomsg = Nanomsg::new_subscribe("/tmp/test.socket");
-    /// let sub_nanomsg = Nanomsg::new("/tmp/test.socket", NanomsgProtocol::Sub);
+    /// let sub_nanomsg = Nanomsg::new_subscribe("ipc:///tmp/test.ipc");
+    /// let sub_nanomsg = Nanomsg::new("ipc:///tmp/test.ipc", NanomsgProtocol::Sub);
     /// ```
     pub fn new_subscribe(path: &str) -> MessageResult<Self> {
         Nanomsg::new(path, NanomsgProtocol::Sub)
