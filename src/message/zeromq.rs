@@ -9,6 +9,8 @@ pub use zmq::Error as MessageError;
 pub use zmq::Result as MessageResult;
 pub use zmq::SocketType;
 
+use super::Subscribe;
+
 /// A basic encap of [`zmq::Context`] for subscribing and publishing.
 pub struct Zeromq {
     socket: Socket,
@@ -120,6 +122,14 @@ impl Write for Zeromq {
     }
 }
 
+impl Subscribe for Zeromq {
+    type Result = MessageResult<()>;
+
+    fn subscribe(&mut self, topic: &str) -> Self::Result {
+        self.socket.set_subscribe(topic.as_bytes())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[cfg(with_zeromq_test)]
@@ -136,7 +146,7 @@ mod tests {
             .expect("failed to create Zeromq subscribe socket");
 
         sub_zeromq
-            .set_subscribe(b"TEST")
+            .subscribe("TEST")
             .expect("failed to set subscribe");
 
         let content = b"TEST Hello, World!";

@@ -9,6 +9,8 @@ pub use nanomsg::Error as MessageError;
 pub use nanomsg::Protocol as NanomsgProtocol;
 pub use nanomsg::Result as MessageResult;
 
+use super::Subscribe;
+
 /// A basic encap of [`Socket`] for subscribing and publishing.
 ///
 /// It will automatically bind the created socket to the specified path.
@@ -127,6 +129,14 @@ impl Write for Nanomsg {
     }
 }
 
+impl Subscribe for Nanomsg {
+    type Result = MessageResult<()>;
+
+    fn subscribe(&mut self, topic: &str) -> Self::Result {
+        self.socket.subscribe(topic.as_bytes())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     // skip: seems it will block the process.
@@ -142,7 +152,7 @@ mod tests {
         let mut sub_nanomsg = super::Nanomsg::new_subscribe(IPC_PATH)
             .expect("failed to create Nanomsg subscribe socket");
 
-        sub_nanomsg.subscribe(b"").expect("failed to subscribe ''");
+        sub_nanomsg.subscribe("").expect("failed to subscribe ''");
 
         let content = b"Hello, World!";
         let mut recv_buf = [0u8; 13];

@@ -14,6 +14,8 @@
 - `slack`: For sending notifications to Slack with Slack Hook.
 - `message`: A basic encap of `nanomsg` and `zeromq` for subscribing and publishing.
   - (beta 2) implement DerefMut to `Socket` for `message`
+- `message`: Add `Subscribe` trait for generalize `subscribe()` method.
+  - `zeromq` and `nanomsg` both have implemented this.
 
 ### Unreleased: 0.3.0 – Bug fixes
 
