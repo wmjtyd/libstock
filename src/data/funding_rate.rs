@@ -1,8 +1,8 @@
-//! The bbo-related operations.
+//! The funding rate related operations.
 
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 
-use crypto_msg_parser::{FundingRateMsg};
+use crypto_msg_parser::FundingRateMsg;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
@@ -13,10 +13,10 @@ use super::{
     hex::{HexDataError, NumToBytesExt},
 };
 
-/// Encode a [`BboMsg`] to bytes.
+/// Encode a [`FundingRateMsg`] to bytes.
 pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<Vec<u8>> {
-    // This data should have 41 bytes.
-    let mut bytes = Vec::<u8>::with_capacity(41);
+    // This data should have 32 bytes.
+    let mut bytes = Vec::<u8>::with_capacity(32);
 
     // 1. 交易所时间戳: 6 字节
     bytes.extend_from_slice(&ExchangeTimestampRepr(funding_rate.timestamp).to_bytes());
@@ -36,19 +36,21 @@ pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<V
     // 6. SYMBOL: 2 字节信息标识
     bytes.extend_from_slice(&SymbolPairRepr::from_pair(&funding_rate.pair).to_bytes());
 
-    // 7. funding_rate
+    // 7. funding_rate: 5 bytes
     bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_rate.to_string())?);
 
-    // 8. funding_time
+    // 8. funding_time: 5 bytes
     bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_time.to_string())?);
 
-    // 9. estimated_rate
-    bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.estimated_rate.unwrap().to_string())?);
+    // 9. estimated_rate: 5 bytes
+    bytes.extend_from_slice(&u32::encode_bytes(
+        &funding_rate.estimated_rate.unwrap().to_string(),
+    )?);
 
     Ok(bytes)
 }
 
-/// Decode the specified bytes to a [`BboMsg`].
+/// Decode the specified bytes to a [`FundingRateMsg`].
 pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> {
     let mut reader = BufReader::new(payload);
 
@@ -56,7 +58,7 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
     let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
     // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    reader.consume(8);
+    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
 
     // 3. EXCHANGE: 1 字节信息标识
     let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
@@ -70,7 +72,7 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
     // 6. SYMBOL_PAIR: 2 字节信息标识
     let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
 
-    // 7. funding_rate
+    // 7. funding_rate: 5 bytes
     let funding_rate = {
         let raw_bytes = reader.read_exact_array()?;
         u32::decode_bytes(&raw_bytes)
@@ -78,10 +80,10 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
             .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
 
-    // 8. funding_time
+    // 8. funding_time: 5 bytes
     let funding_time = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
-    // 9. estimated_rate
+    // 9. estimated_rate: 5 bytes
     let estimated_rate = {
         let raw_bytes = reader.read_exact_array()?;
         u32::decode_bytes(&raw_bytes)
