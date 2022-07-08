@@ -20,11 +20,11 @@ impl Zeromq {
     /// # Example
     ///
     /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, ZeromqProtocol};
+    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
     ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
     /// let pub_zeromq = Zeromq::new_publish("tcp://127.0.0.1:5432");
-    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", ZeromqProtocol::PUB);
+    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::PUB);
     /// ```
     pub fn new(uri: &str, socket_type: SocketType) -> MessageResult<Self> {
         use SocketType::{PUB, SUB};
@@ -50,11 +50,11 @@ impl Zeromq {
     /// # Example
     ///
     /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, ZeromqProtocol};
+    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
     ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
     /// let pub_zeromq = Zeromq::new_publish("tcp://127.0.0.1:5432");
-    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", ZeromqProtocol::PUB);
+    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::PUB);
     /// ```
     pub fn new_publish(path: &str) -> MessageResult<Self> {
         Self::new(path, SocketType::PUB)
@@ -65,11 +65,11 @@ impl Zeromq {
     /// # Example
     ///
     /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, ZeromqProtocol};
+    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
     ///
     /// // The both are equivalent: It will create a publishable Nanomsg socket.
     /// let sub_zeromq = Zeromq::new_subscribe("tcp://127.0.0.1:5432");
-    /// let sub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", ZeromqProtocol::SUB);
+    /// let sub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::SUB);
     /// ```
     pub fn new_subscribe(path: &str) -> MessageResult<Self> {
         Self::new(path, SocketType::SUB)
