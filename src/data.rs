@@ -25,3 +25,6 @@ pub mod bbo;
 
 #[cfg(feature = "crypto")]
 pub mod kline;
+
+#[cfg(feature = "crypto")]
+pub mod funding_rate;
