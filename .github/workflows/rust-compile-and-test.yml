@@ -15,9 +15,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: taiki-e/install-action@nextest
       - name: Install nanomsg
         run: bash scripts/ci_install_nanomsg.sh
       - name: Build
         run: cargo build --verbose --features vendored-zeromq
       - name: Run tests
-        run: cargo test --verbose --features vendored-zeromq
+        run: |
+          cargo nextest run --features vendored-zeromq
+          cargo test --doc --features vendored-zeromq

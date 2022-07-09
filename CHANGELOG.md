@@ -25,6 +25,11 @@
 - (beta 2) `message`: use `connect` instead of `bind` for Sub
 - `data/*/decode`: `ReceivedTimestampRepr` should be 6 bytes instead of 8 bytes.
 
+### Unreleased: 0.3.0 – Refactoring
+
+- Upgrade `crypto-crawler-rs` to `92aee0d37e228e53dd994a17058a7f819e005446`
+  - Clean up the unnecessary dependencies.
+
 ### Unreleased: 0.3.0 – Tests
 
 <!-- <!> has been disabled by default. -->
@@ -34,12 +39,13 @@
 
 ### Unreleased: 0.3.0 – Chores
 
-- Upgrade `crypto-crawler-rs` to `d45528283b387bbe6c46507d7837bf1dd229ff6d`
 - `file/reader`: add `info` logger on new() for better debugging
 
 ### Unreleased: 0.3.0 – CI
 
 - Install `nanomsg` for `message` test.
+- Enable `vendored-zeromq` in CI by default.
+- Introduce `cargo nextest` for faster build.
 
 ## 0.2.0
 
