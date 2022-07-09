@@ -6,8 +6,9 @@ use std::{
     time::{SystemTime, SystemTimeError},
 };
 
-use crypto_crawler::{MarketType, MessageType};
-use crypto_msg_parser::TradeSide;
+use crypto_market_type::MarketType;
+use crypto_message::TradeSide;
+use crypto_msg_type::MessageType;
 use either::Either;
 
 use super::{

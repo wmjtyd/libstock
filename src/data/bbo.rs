@@ -2,7 +2,7 @@
 
 use std::io::BufReader;
 
-use crypto_msg_parser::BboMsg;
+use crypto_message::BboMsg;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
@@ -135,8 +135,8 @@ pub type BboResult<T> = Result<T, BboError>;
 
 #[cfg(test)]
 mod tests {
-    use crypto_crawler::MarketType;
-    use crypto_msg_parser::BboMsg;
+    use crypto_market_type::MarketType;
+    use crypto_message::BboMsg;
 
     use super::{decode_bbo, encode_bbo};
 
@@ -144,10 +144,10 @@ mod tests {
     fn test_bbo_encode_decode() {
         let payload = BboMsg {
             exchange: "crypto".into(),
-            market_type: crypto_crawler::MarketType::Spot,
+            market_type: crypto_market_type::MarketType::Spot,
             symbol: "1".into(),
             pair: "BTC/USDT".into(),
-            msg_type: crypto_crawler::MessageType::BBO,
+            msg_type: crypto_msg_type::MessageType::BBO,
             timestamp: 12345678,
             json: "".into(),
             bid_price: 1.0,
@@ -184,10 +184,10 @@ mod tests {
     fn test_bbo_encode_decode_unknown_markettype() {
         let payload = BboMsg {
             exchange: "crypto".into(),
-            market_type: crypto_crawler::MarketType::AmericanOption,
+            market_type: crypto_market_type::MarketType::AmericanOption,
             symbol: "1".into(),
             pair: "BTC/USDT".into(),
-            msg_type: crypto_crawler::MessageType::BBO,
+            msg_type: crypto_msg_type::MessageType::BBO,
             timestamp: 12345678,
             json: "".into(),
             bid_price: 1.0,

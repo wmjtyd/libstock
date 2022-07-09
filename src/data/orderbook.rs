@@ -5,7 +5,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use crypto_msg_parser::{Order, OrderBookMsg};
+use crypto_message::{Order, OrderBookMsg};
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{

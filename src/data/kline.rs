@@ -2,7 +2,8 @@
 
 use std::io::BufReader;
 
-use crypto_msg_parser::KlineMsg;
+// TODO: change to CandlestickMsg
+use crypto_message::KlineMsg;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{

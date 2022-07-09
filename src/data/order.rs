@@ -2,7 +2,7 @@
 //!
 //! Note: we just copy it from `crypto-market`, and we may not test it well.
 
-use crypto_msg_parser::Order;
+use crypto_message::Order;
 
 #[derive(PartialEq)]
 pub enum OrderType {

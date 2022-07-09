@@ -2,8 +2,9 @@
 //! for `crypto-market`'s types.
 
 use bimap::BiMap;
-use crypto_crawler::{MarketType, MessageType};
-use crypto_msg_parser::TradeSide;
+use crypto_market_type::MarketType;
+use crypto_message::TradeSide;
+use crypto_msg_type::MessageType;
 use strum::{EnumString, FromRepr};
 
 macro_rules! create_bimap {

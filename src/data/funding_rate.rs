@@ -2,7 +2,7 @@
 
 use std::io::BufReader;
 
-use crypto_msg_parser::FundingRateMsg;
+use crypto_message::FundingRateMsg;
 use rust_decimal::prelude::ToPrimitive;
 
 use super::{
