@@ -111,18 +111,21 @@ impl NumToBytesExt<5> for u32 {
     fn encode_bytes(value: &str) -> HexDataResult<[u8; 5]> {
         let mut result = [0u8; 5];
 
-        // if value.find("E-") != Some(0) {
-        //     let split: Vec<&str> = value.split("E-").collect();
-        //     let a = split[1];
-        //     e = a.parse().unwrap();
-        //     value = split[0].to_string();
-        // }
+        let positive_or_negative;
 
-        let (num_str, scale) = float_to_num_with_scale(value);
+        let value = if value.as_bytes()[0] == b"-"[0] {
+            positive_or_negative = 0x80_u8;
+            value[1..].to_string()
+        } else {
+            positive_or_negative = 0x00_u8;
+            value.to_string()
+        };
+
+        let (num_str, scale) = float_to_num_with_scale(&value);
 
         let num = num_str.parse::<Self>()?.to_be_bytes();
         result[..4].copy_from_slice(&num);
-        result[4] = scale;
+        result[4] = scale | positive_or_negative;
 
         Ok(result)
     }
@@ -167,17 +170,25 @@ impl NumToBytesExt<5> for u32 {
     /// }
     /// ```
     fn decode_bytes(value: &[u8; 5]) -> Decimal {
-        let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 0, 4]) as i64;
+        
+        let mut num_part = Self::from_be_bytes(*arrayref::array_ref![value, 0, 4]) as i64;
+
+        num_part = if value[4] >> 7 != 0 {
+            !num_part + 1
+        } else {
+            num_part
+        };
 
         let scale_part = u32::from_be_bytes({
             let raw = value[4];
 
-            [0, 0, 0, raw]
+            [0, 0, 0, raw & 0x7f_u8]
         });
 
         Decimal::new(num_part, scale_part)
     }
 }
+
 
 impl NumToBytesExt<10> for u64 {
     // WIP: examples
