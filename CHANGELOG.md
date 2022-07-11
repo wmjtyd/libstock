@@ -8,6 +8,7 @@
   - For better backtrace
 - `file/writer`: Set the size of the length field of written data structure to 2 bytes.
   - It used to be 'usize'. It is an implementation mistake.
+- `file/hex`: removed two deprecated methods
 
 ### Unreleased: 0.3.0 – Features
 
@@ -16,6 +17,9 @@
   - (beta 2) implement DerefMut to `Socket` for `message`
 - `message`: Add `Subscribe` trait for generalize `subscribe()` method.
   - `zeromq` and `nanomsg` both have implemented this.
+- `file/hex`: Add the encode/decode capability for negative numbers
+  - WIP: dirty; to fix.
+- `message/zeromq`: change to async form.
 
 ### Unreleased: 0.3.0 – Bug fixes
 
