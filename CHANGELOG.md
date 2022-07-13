@@ -48,7 +48,6 @@
 ### Unreleased: 0.3.0 – CI
 
 - Install `nanomsg` for `message` test.
-- Enable `vendored-zeromq` in CI by default.
 - Introduce `cargo nextest` for faster build.
 
 ## 0.2.0
