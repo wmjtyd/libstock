@@ -16,6 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Trying to generate docs
-        run: cargo doc --features vendored-zeromq
+        run: cargo doc
         env:
           RUSTDOCFLAGS: "-Dwarnings"
