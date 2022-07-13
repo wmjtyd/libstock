@@ -98,8 +98,12 @@ trait WtfUnsignedPolyfill {
     type SignedType;
     type UnsignedType;
 
-    fn signum(&self) -> Self::SignedType { unreachable!() }
-    fn unsigned_abs(&self) -> Self::UnsignedType { unreachable!() }
+    fn signum(&self) -> Self::SignedType {
+        unreachable!()
+    }
+    fn unsigned_abs(&self) -> Self::UnsignedType {
+        unreachable!()
+    }
 }
 
 impl WtfUnsignedPolyfill for u32 {
@@ -193,7 +197,7 @@ macro_rules! build_opt_enc_mod {
                 let (scale_part, sign) = {
                     let raw = value[4] as i8;
                     let sign = raw.signum();
-        
+
                     if sign == -1 {
                         // Remove the +1 for distinguish. See `@encbody`.
                         (u32::from_be_bytes([0, 0, 0, raw.unsigned_abs() - 1]), sign)
@@ -201,7 +205,7 @@ macro_rules! build_opt_enc_mod {
                         (u32::from_be_bytes([0, 0, 0, raw as u8]), sign)
                     }
                 };
-        
+
                 let mut decimal = Decimal::new(num_part, scale_part);
                 decimal.set_sign_negative(sign == -1);
                 decimal

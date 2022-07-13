@@ -1,9 +1,9 @@
 //! A basic encap methods of [`zmq`].
 
-use tokio::io::{AsyncRead, self, AsyncWrite};
-use zeromq::{Socket, SocketSend, ZmqMessage, SocketRecv};
+use tokio::io::{self, AsyncRead, AsyncWrite};
+use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
 
-pub use zeromq::{SubSocket, PubSocket, ZmqResult, ZmqError};
+pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
 
 use std::ops::{Deref, DerefMut};
 use std::task::Poll;
@@ -16,9 +16,10 @@ pub struct Zeromq<T> {
 }
 
 impl<T> Zeromq<T> {
-
     pub async fn new_publish(path: &str) -> ZmqResult<Zeromq<PubSocket>> {
-        let mut pub_socket = Zeromq {socket: PubSocket::new()};
+        let mut pub_socket = Zeromq {
+            socket: PubSocket::new(),
+        };
         pub_socket.bind(path).await?;
         // 空消息
         pub_socket.send(ZmqMessage::from("")).await?;
@@ -26,7 +27,9 @@ impl<T> Zeromq<T> {
     }
 
     pub async fn new_subscribe(path: &str) -> ZmqResult<Zeromq<SubSocket>> {
-        let mut sub_socket = Zeromq {socket: SubSocket::new()};
+        let mut sub_socket = Zeromq {
+            socket: SubSocket::new(),
+        };
         sub_socket.connect(path).await?;
         Ok(sub_socket)
     }
@@ -52,17 +55,15 @@ impl AsyncRead for Zeromq<SubSocket> {
         cx: &mut std::task::Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
-        let mut response = self.socket
-            .recv();
+        let mut response = self.socket.recv();
 
         let data = response.as_mut().poll(cx);
 
         match data {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Err(e)) => Poll::Ready(Err(io::Error::new(
-                io::ErrorKind::Other,
-                e.to_string()
-            ))),
+            Poll::Ready(Err(e)) => {
+                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
+            }
             Poll::Ready(Ok(data)) => {
                 let data: Result<Vec<u8>, _> = data.try_into();
 
@@ -71,10 +72,7 @@ impl AsyncRead for Zeromq<SubSocket> {
                         buf.put_slice(&data);
                         Poll::Ready(Ok(()))
                     }
-                    Err(e) => Poll::Ready(Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        e.to_string(),
-                    ))),
+                    Err(e) => Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string()))),
                 }
             }
         }
@@ -93,19 +91,24 @@ impl AsyncWrite for Zeromq<PubSocket> {
 
         match task.as_mut().poll(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Err(e)) => Poll::Ready(Err(io::Error::new(
-                io::ErrorKind::Other,
-                e.to_string(),
-            ))),
+            Poll::Ready(Err(e)) => {
+                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
+            }
             Poll::Ready(Ok(())) => Poll::Ready(Ok(buf_len)),
         }
     }
 
-    fn poll_flush(self: std::pin::Pin<&mut Self>, _: &mut std::task::Context<'_>) -> Poll<Result<(), std::io::Error>> {
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
         unimplemented!("Zeromq does not support flush.")
     }
 
-    fn poll_shutdown(self: std::pin::Pin<&mut Self>, _: &mut std::task::Context<'_>) -> Poll<Result<(), std::io::Error>> {
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
         unimplemented!("Shutdown with `self.socket.close()`.")
     }
 }
