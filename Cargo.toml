@@ -37,19 +37,19 @@ async-trait = "0.1.56"
 version = "=1.0.2"
 optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
-rev = "92aee0d37e228e53dd994a17058a7f819e005446"
+rev = "8914b2855b87397f82a14507a20a2094c1ab7891"
 
 [dependencies.crypto-market-type]
 version = "=1.1.1"
 optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
-rev = "92aee0d37e228e53dd994a17058a7f819e005446"
+rev = "9c7cda9ab90c900c014566f9d279bef822cc37f1"
 
 [dependencies.crypto-msg-type]
 version = "=1.0.8"
 optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
-rev = "92aee0d37e228e53dd994a17058a7f819e005446"
+rev = "9c7cda9ab90c900c014566f9d279bef822cc37f1"
 
 [features]
 default = ["crypto", "message", "slack"]
