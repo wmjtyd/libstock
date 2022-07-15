@@ -1,4 +1,4 @@
-//! A basic encap methods of [`zmq`].
+//! A basic encap methods of [`zeromq`].
 
 use tokio::io::{self, AsyncRead, AsyncWrite};
 use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
@@ -12,7 +12,7 @@ use std::task::Poll;
 
 use super::AsyncSubscribe;
 
-/// A basic encap of [`zmq::Context`] for subscribing and publishing.
+/// A basic encap of [`zeromq`] for subscribing and publishing.
 pub struct Zeromq<T> {
     socket: T,
 }
