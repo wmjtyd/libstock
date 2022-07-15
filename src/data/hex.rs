@@ -153,8 +153,15 @@ macro_rules! build_opt_enc_mod {
                 (num.to_be_bytes(), scale)
             };
 
-            result[..($len - 1)].copy_from_slice(&bytes);
-            result[($len - 1)] = scale;
+            // The begin offset of our data.
+            let begin = build_opt_enc_mod!(@decbegin $len);
+            // The index next to the end of number data.
+            let end = begin + build_opt_enc_mod!(@decsize $len);
+            // The end of our data, which is our scale.
+            let scale_idx = end;
+
+            result[begin..end].copy_from_slice(&bytes);
+            result[scale_idx] = scale;
 
             Ok(result)
         }
@@ -187,6 +194,11 @@ macro_rules! build_opt_enc_mod {
                 build_opt_enc_mod!(@decsize $len)
             ]) as i64;
 
+            // The index where scale is.
+            let scale_idx =
+                build_opt_enc_mod!(@decbegin $len) +
+                build_opt_enc_mod!(@decsize $len);
+
             // Don't mind this if-block; compiler will optimize this.
             //
             // For example:
@@ -195,7 +207,7 @@ macro_rules! build_opt_enc_mod {
             //     1
             if ($sign_needed) {
                 let (scale_part, sign) = {
-                    let raw = value[4] as i8;
+                    let raw = value[scale_idx] as i8;
                     let sign = raw.signum();
 
                     if sign == -1 {
@@ -212,7 +224,7 @@ macro_rules! build_opt_enc_mod {
             } else {
                 // This is the optimized code for unsigned number
                 // It doesn't have some unnecessary determination.
-                let scale_part = u32::from_be_bytes([0, 0, 0, value[4]]);
+                let scale_part = u32::from_be_bytes([0, 0, 0, value[scale_idx]]);
                 let decimal = Decimal::new(num_part, scale_part);
                 decimal
             }
