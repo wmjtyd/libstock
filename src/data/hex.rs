@@ -153,8 +153,8 @@ macro_rules! build_opt_enc_mod {
                 (num.to_be_bytes(), scale)
             };
 
-            result[..4].copy_from_slice(&bytes);
-            result[4] = scale;
+            result[..($len - 1)].copy_from_slice(&bytes);
+            result[($len - 1)] = scale;
 
             Ok(result)
         }
