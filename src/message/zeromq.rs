@@ -4,6 +4,8 @@ use tokio::io::{self, AsyncRead, AsyncWrite};
 use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
 
 pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
+pub use PubSocket as Pub;
+pub use SubSocket as Sub;
 
 use std::ops::{Deref, DerefMut};
 use std::task::Poll;
@@ -15,8 +17,8 @@ pub struct Zeromq<T> {
     socket: T,
 }
 
-impl<T> Zeromq<T> {
-    pub async fn new_publish(path: &str) -> ZmqResult<Zeromq<PubSocket>> {
+impl Zeromq<PubSocket> {
+    pub async fn new(path: &str) -> ZmqResult<Self> {
         let mut pub_socket = Zeromq {
             socket: PubSocket::new(),
         };
@@ -25,8 +27,10 @@ impl<T> Zeromq<T> {
         pub_socket.send(ZmqMessage::from("")).await?;
         Ok(pub_socket)
     }
+}
 
-    pub async fn new_subscribe(path: &str) -> ZmqResult<Zeromq<SubSocket>> {
+impl Zeromq<SubSocket> {
+    pub async fn new(path: &str) -> ZmqResult<Self> {
         let mut sub_socket = Zeromq {
             socket: SubSocket::new(),
         };
