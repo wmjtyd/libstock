@@ -204,8 +204,8 @@ macro_rules! build_opt_enc_mod {
                 // float index num
                 let raw = value[scale_idx];
 
-                // true is Positive numbers
-                // false is Negative numbers
+                // false is Positive numbers
+                // true is Negative numbers
                 let sign = raw >> 7 != 0;
 
                 // 0x7f is mask
