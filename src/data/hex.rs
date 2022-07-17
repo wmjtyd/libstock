@@ -137,14 +137,9 @@ macro_rules! build_opt_enc_mod {
                 (
                     bytes,
                     if sign == -1 {
-                        // * as -0 == 0, we add 1 to distinguish 0 and -0.
-                        //   we will subtract 1 in decoding.
-                        // * as `sign` is i32, we must convert the u8 scale
-                        //   to i32.
-                        // * ultimately we should convert the calculation result
-                        //   back to u8. `-0` will be converted to `255`; `-1`
-                        //   will be converted to `254`, so on.
-                        (((scale + 1) as i8) * sign as i8) as u8
+                        // 0x7f is mask
+                        // 0x80 is sign
+                        (scale & 0x7f) | 0x80
                     } else {
                         scale
                     }
@@ -206,20 +201,18 @@ macro_rules! build_opt_enc_mod {
             // Rust will compile it to:
             //     1
             if ($sign_needed) {
-                let (scale_part, sign) = {
-                    let raw = value[scale_idx] as i8;
-                    let sign = raw.signum();
+                // float index num
+                let raw = value[scale_idx];
 
-                    if sign == -1 {
-                        // Remove the +1 for distinguish. See `@encbody`.
-                        (u32::from_be_bytes([0, 0, 0, raw.unsigned_abs() - 1]), sign)
-                    } else {
-                        (u32::from_be_bytes([0, 0, 0, raw as u8]), sign)
-                    }
-                };
+                // true is Positive numbers
+                // false is Negative numbers
+                let sign = raw >> 7 != 0;
+
+                // 0x7f is mask
+                let scale_part = (raw & 0x7f) as u32;
 
                 let mut decimal = Decimal::new(num_part, scale_part);
-                decimal.set_sign_negative(sign == -1);
+                decimal.set_sign_negative(sign);
                 decimal
             } else {
                 // This is the optimized code for unsigned number
