@@ -329,11 +329,11 @@ mod tests {
             "512.016"
         );
         assert_eq!(
-            i32::decode_bytes(&[6, 26, 128, 1, 129 | SIGN]).to_string(),
+            i32::decode_bytes(&[6, 26, 128, 1, 1 | SIGN]).to_string(),
             "-10240000.1"
         );
         assert_eq!(
-            i32::decode_bytes(&[61, 9, 0, 12, 130 | SIGN]).to_string(),
+            i32::decode_bytes(&[61, 9, 0, 12, 2 | SIGN]).to_string(),
             "-10240000.12"
         );
     }
