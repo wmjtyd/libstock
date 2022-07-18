@@ -269,27 +269,33 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 mod tests {
     use super::{HexDataError, NumToBytesExt};
 
+    const SIGN: u8 = 0x80;
+
+    // Meaningless behavior
+    // For readability of the code only
+    const NOT_SIGN: u8 = 0x00;
+
     #[test]
     fn test_5b_encode() {
-        assert_eq!(i32::encode_bytes("1280").unwrap(), [0, 0, 5, 0, 0]);
-        assert_eq!(i32::encode_bytes("25600").unwrap(), [0, 0, 100, 0, 0]);
-        assert_eq!(i32::encode_bytes("512000").unwrap(), [0, 7, 208, 0, 0]);
-        assert_eq!(i32::encode_bytes("10240000").unwrap(), [0, 156, 64, 0, 0]);
+        assert_eq!(i32::encode_bytes("1280").unwrap(),      [0, 0,   5,   0, 0 | NOT_SIGN]);
+        assert_eq!(i32::encode_bytes("25600").unwrap(),     [0, 0,   100, 0, 0 | NOT_SIGN]);
+        assert_eq!(i32::encode_bytes("512000").unwrap(),    [0, 7,   208, 0, 0 | NOT_SIGN]);
+        assert_eq!(i32::encode_bytes("10240000").unwrap(),  [0, 156, 64,  0, 0 | NOT_SIGN]);
         assert_eq!(
             i32::encode_bytes("-10240000").unwrap(),
-            [0, 156, 64, 0, 255]
+            [0, 156, 64, 0, 0 | SIGN]
         );
 
-        assert_eq!(i32::encode_bytes("512.000").unwrap(), [0, 7, 208, 0, 3]);
-        assert_eq!(i32::encode_bytes("512.001").unwrap(), [0, 7, 208, 1, 3]);
-        assert_eq!(i32::encode_bytes("512.016").unwrap(), [0, 7, 208, 16, 3]);
+        assert_eq!(i32::encode_bytes("512.000").unwrap(), [0, 7, 208, 0,  3 | NOT_SIGN]);
+        assert_eq!(i32::encode_bytes("512.001").unwrap(), [0, 7, 208, 1,  3 | NOT_SIGN]);
+        assert_eq!(i32::encode_bytes("512.016").unwrap(), [0, 7, 208, 16, 3 | NOT_SIGN]);
         assert_eq!(
             i32::encode_bytes("-10240000.1").unwrap(),
-            [6, 26, 128, 1, 254]
+            [6, 26, 128, 1, 1 | SIGN]
         );
         assert_eq!(
             i32::encode_bytes("-10240000.12").unwrap(),
-            [61, 9, 0, 12, 253]
+            [61, 9, 0, 12, 2 | SIGN]
         );
 
         assert!(matches!(
@@ -300,30 +306,34 @@ mod tests {
 
     #[test]
     fn test_5b_decode() {
-        assert_eq!(i32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
-        assert_eq!(i32::decode_bytes(&[0, 0, 100, 0, 0]).to_string(), "25600");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 0]).to_string(), "512000");
+
+
+
+        assert_eq!(i32::decode_bytes(&[0, 0, 5, 0, 0x00 | NOT_SIGN]).to_string(), "1280");
+        assert_eq!(i32::decode_bytes(&[0, 0, 100, 0, 0x00 | NOT_SIGN]).to_string(), "25600");
+        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 0x00 | NOT_SIGN]).to_string(), "512000");
         assert_eq!(
-            i32::decode_bytes(&[0, 156, 64, 0, 0]).to_string(),
+            i32::decode_bytes(&[0, 156, 64, 0, 0x00 | NOT_SIGN]).to_string(),
             "10240000"
         );
+        // 0x00 is 
         assert_eq!(
-            i32::decode_bytes(&[0, 156, 64, 0, 255]).to_string(),
+            i32::decode_bytes(&[0, 156, 64, 0, 0 | SIGN ]).to_string(),
             "-10240000"
         );
 
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 3]).to_string(), "512.000");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 1, 3]).to_string(), "512.001");
+        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 3 | NOT_SIGN]).to_string(), "512.000");
+        assert_eq!(i32::decode_bytes(&[0, 7, 208, 1, 3 | NOT_SIGN]).to_string(), "512.001");
         assert_eq!(
-            i32::decode_bytes(&[0, 7, 208, 16, 3]).to_string(),
+            i32::decode_bytes(&[0, 7, 208, 16, 3 | NOT_SIGN]).to_string(),
             "512.016"
         );
         assert_eq!(
-            i32::decode_bytes(&[6, 26, 128, 1, 254]).to_string(),
+            i32::decode_bytes(&[6, 26, 128, 1, 129 | SIGN]).to_string(),
             "-10240000.1"
         );
         assert_eq!(
-            i32::decode_bytes(&[61, 9, 0, 12, 253]).to_string(),
+            i32::decode_bytes(&[61, 9, 0, 12, 130 | SIGN]).to_string(),
             "-10240000.12"
         );
     }
