@@ -137,14 +137,9 @@ macro_rules! build_opt_enc_mod {
                 (
                     bytes,
                     if sign == -1 {
-                        // * as -0 == 0, we add 1 to distinguish 0 and -0.
-                        //   we will subtract 1 in decoding.
-                        // * as `sign` is i32, we must convert the u8 scale
-                        //   to i32.
-                        // * ultimately we should convert the calculation result
-                        //   back to u8. `-0` will be converted to `255`; `-1`
-                        //   will be converted to `254`, so on.
-                        (((scale + 1) as i8) * sign as i8) as u8
+                        // 0x7f is mask
+                        // 0x80 is sign
+                        (scale & 0x7f) | 0x80
                     } else {
                         scale
                     }
@@ -206,20 +201,27 @@ macro_rules! build_opt_enc_mod {
             // Rust will compile it to:
             //     1
             if ($sign_needed) {
-                let (scale_part, sign) = {
-                    let raw = value[scale_idx] as i8;
-                    let sign = raw.signum();
+                // Principle
+                // =========
+                //
+                // 1 1 0 1 - 1 1 1 0
+                // 0 1 1 1 - 1 1 1 1  mask (&)
+                // 0 1 0 1 - 1 1 1 0
+                // 正负  >> 7
+                // 小數  0 1 1 1 - 1 1 1 1  mask (&)
 
-                    if sign == -1 {
-                        // Remove the +1 for distinguish. See `@encbody`.
-                        (u32::from_be_bytes([0, 0, 0, raw.unsigned_abs() - 1]), sign)
-                    } else {
-                        (u32::from_be_bytes([0, 0, 0, raw as u8]), sign)
-                    }
-                };
+                // float index num
+                let raw = value[scale_idx];
+
+                // false is Positive numbers
+                // true is Negative numbers
+                let sign = raw >> 7 != 0;
+
+                // 0x7f is mask
+                let scale_part = (raw & 0x7f) as u32;
 
                 let mut decimal = Decimal::new(num_part, scale_part);
-                decimal.set_sign_negative(sign == -1);
+                decimal.set_sign_negative(sign);
                 decimal
             } else {
                 // This is the optimized code for unsigned number
@@ -274,29 +276,59 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 
 #[cfg(test)]
 mod tests {
+    // For readability.
+    #![allow(clippy::identity_op)]
+
     use super::{HexDataError, NumToBytesExt};
+
+    const SIGN: u8 = 0x80;
+
+    // Meaningless behavior
+    // For readability of the code only
+    const NOT_SIGN: u8 = 0x00;
 
     #[test]
     fn test_5b_encode() {
-        assert_eq!(i32::encode_bytes("1280").unwrap(), [0, 0, 5, 0, 0]);
-        assert_eq!(i32::encode_bytes("25600").unwrap(), [0, 0, 100, 0, 0]);
-        assert_eq!(i32::encode_bytes("512000").unwrap(), [0, 7, 208, 0, 0]);
-        assert_eq!(i32::encode_bytes("10240000").unwrap(), [0, 156, 64, 0, 0]);
+        assert_eq!(
+            i32::encode_bytes("1280").unwrap(),
+            [0, 0, 5, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("25600").unwrap(),
+            [0, 0, 100, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512000").unwrap(),
+            [0, 7, 208, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("10240000").unwrap(),
+            [0, 156, 64, 0, 0 | NOT_SIGN]
+        );
         assert_eq!(
             i32::encode_bytes("-10240000").unwrap(),
-            [0, 156, 64, 0, 255]
+            [0, 156, 64, 0, 0 | SIGN]
         );
 
-        assert_eq!(i32::encode_bytes("512.000").unwrap(), [0, 7, 208, 0, 3]);
-        assert_eq!(i32::encode_bytes("512.001").unwrap(), [0, 7, 208, 1, 3]);
-        assert_eq!(i32::encode_bytes("512.016").unwrap(), [0, 7, 208, 16, 3]);
+        assert_eq!(
+            i32::encode_bytes("512.000").unwrap(),
+            [0, 7, 208, 0, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.001").unwrap(),
+            [0, 7, 208, 1, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.016").unwrap(),
+            [0, 7, 208, 16, 3 | NOT_SIGN]
+        );
         assert_eq!(
             i32::encode_bytes("-10240000.1").unwrap(),
-            [6, 26, 128, 1, 254]
+            [6, 26, 128, 1, 1 | SIGN]
         );
         assert_eq!(
             i32::encode_bytes("-10240000.12").unwrap(),
-            [61, 9, 0, 12, 253]
+            [61, 9, 0, 12, 2 | SIGN]
         );
 
         assert!(matches!(
@@ -307,30 +339,46 @@ mod tests {
 
     #[test]
     fn test_5b_decode() {
-        assert_eq!(i32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
-        assert_eq!(i32::decode_bytes(&[0, 0, 100, 0, 0]).to_string(), "25600");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 0]).to_string(), "512000");
         assert_eq!(
-            i32::decode_bytes(&[0, 156, 64, 0, 0]).to_string(),
-            "10240000"
+            i32::decode_bytes(&[0, 0, 5, 0, 0x00 | NOT_SIGN]).to_string(),
+            "1280"
         );
         assert_eq!(
-            i32::decode_bytes(&[0, 156, 64, 0, 255]).to_string(),
+            i32::decode_bytes(&[0, 0, 100, 0, 0x00 | NOT_SIGN]).to_string(),
+            "25600"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 0, 0x00 | NOT_SIGN]).to_string(),
+            "512000"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 156, 64, 0, 0x00 | NOT_SIGN]).to_string(),
+            "10240000"
+        );
+        // 0x00 is
+        assert_eq!(
+            i32::decode_bytes(&[0, 156, 64, 0, 0 | SIGN]).to_string(),
             "-10240000"
         );
 
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 3]).to_string(), "512.000");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 1, 3]).to_string(), "512.001");
         assert_eq!(
-            i32::decode_bytes(&[0, 7, 208, 16, 3]).to_string(),
+            i32::decode_bytes(&[0, 7, 208, 0, 3 | NOT_SIGN]).to_string(),
+            "512.000"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 1, 3 | NOT_SIGN]).to_string(),
+            "512.001"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 16, 3 | NOT_SIGN]).to_string(),
             "512.016"
         );
         assert_eq!(
-            i32::decode_bytes(&[6, 26, 128, 1, 254]).to_string(),
+            i32::decode_bytes(&[6, 26, 128, 1, 1 | SIGN]).to_string(),
             "-10240000.1"
         );
         assert_eq!(
-            i32::decode_bytes(&[61, 9, 0, 12, 253]).to_string(),
+            i32::decode_bytes(&[61, 9, 0, 12, 2 | SIGN]).to_string(),
             "-10240000.12"
         );
     }
