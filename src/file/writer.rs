@@ -151,6 +151,10 @@ impl DataWriter {
                                 DaemonError::StopDaemon => {
                                     tracing::trace!("Received the forwarded “StopDaemon” request.");
                                     break;
+                                },
+                                DaemonError::RecvActionFailed(flume::RecvError::Disconnected) => {
+                                    tracing::error!("Failed to receive on the closed channel.");
+                                    break;
                                 }
                                 _ => {
                                     tracing::error!("Error happened: {e}; skipping.");
