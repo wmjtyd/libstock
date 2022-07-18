@@ -201,6 +201,15 @@ macro_rules! build_opt_enc_mod {
             // Rust will compile it to:
             //     1
             if ($sign_needed) {
+                // Principle
+                // =========
+                //
+                // 1 1 0 1 - 1 1 1 0
+                // 0 1 1 1 - 1 1 1 1  mask (&)
+                // 0 1 0 1 - 1 1 1 0
+                // 正负  >> 7
+                // 小數  0 1 1 1 - 1 1 1 1  mask (&)
+
                 // float index num
                 let raw = value[scale_idx];
 
@@ -267,6 +276,9 @@ pub type HexDataResult<T> = Result<T, HexDataError>;
 
 #[cfg(test)]
 mod tests {
+    // For readability.
+    #![allow(clippy::identity_op)]
+
     use super::{HexDataError, NumToBytesExt};
 
     const SIGN: u8 = 0x80;
