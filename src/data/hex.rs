@@ -277,18 +277,39 @@ mod tests {
 
     #[test]
     fn test_5b_encode() {
-        assert_eq!(i32::encode_bytes("1280").unwrap(),      [0, 0,   5,   0, 0 | NOT_SIGN]);
-        assert_eq!(i32::encode_bytes("25600").unwrap(),     [0, 0,   100, 0, 0 | NOT_SIGN]);
-        assert_eq!(i32::encode_bytes("512000").unwrap(),    [0, 7,   208, 0, 0 | NOT_SIGN]);
-        assert_eq!(i32::encode_bytes("10240000").unwrap(),  [0, 156, 64,  0, 0 | NOT_SIGN]);
+        assert_eq!(
+            i32::encode_bytes("1280").unwrap(),
+            [0, 0, 5, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("25600").unwrap(),
+            [0, 0, 100, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512000").unwrap(),
+            [0, 7, 208, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("10240000").unwrap(),
+            [0, 156, 64, 0, 0 | NOT_SIGN]
+        );
         assert_eq!(
             i32::encode_bytes("-10240000").unwrap(),
             [0, 156, 64, 0, 0 | SIGN]
         );
 
-        assert_eq!(i32::encode_bytes("512.000").unwrap(), [0, 7, 208, 0,  3 | NOT_SIGN]);
-        assert_eq!(i32::encode_bytes("512.001").unwrap(), [0, 7, 208, 1,  3 | NOT_SIGN]);
-        assert_eq!(i32::encode_bytes("512.016").unwrap(), [0, 7, 208, 16, 3 | NOT_SIGN]);
+        assert_eq!(
+            i32::encode_bytes("512.000").unwrap(),
+            [0, 7, 208, 0, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.001").unwrap(),
+            [0, 7, 208, 1, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.016").unwrap(),
+            [0, 7, 208, 16, 3 | NOT_SIGN]
+        );
         assert_eq!(
             i32::encode_bytes("-10240000.1").unwrap(),
             [6, 26, 128, 1, 1 | SIGN]
@@ -306,24 +327,36 @@ mod tests {
 
     #[test]
     fn test_5b_decode() {
-
-
-
-        assert_eq!(i32::decode_bytes(&[0, 0, 5, 0, 0x00 | NOT_SIGN]).to_string(), "1280");
-        assert_eq!(i32::decode_bytes(&[0, 0, 100, 0, 0x00 | NOT_SIGN]).to_string(), "25600");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 0x00 | NOT_SIGN]).to_string(), "512000");
+        assert_eq!(
+            i32::decode_bytes(&[0, 0, 5, 0, 0x00 | NOT_SIGN]).to_string(),
+            "1280"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 0, 100, 0, 0x00 | NOT_SIGN]).to_string(),
+            "25600"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 0, 0x00 | NOT_SIGN]).to_string(),
+            "512000"
+        );
         assert_eq!(
             i32::decode_bytes(&[0, 156, 64, 0, 0x00 | NOT_SIGN]).to_string(),
             "10240000"
         );
-        // 0x00 is 
+        // 0x00 is
         assert_eq!(
-            i32::decode_bytes(&[0, 156, 64, 0, 0 | SIGN ]).to_string(),
+            i32::decode_bytes(&[0, 156, 64, 0, 0 | SIGN]).to_string(),
             "-10240000"
         );
 
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 0, 3 | NOT_SIGN]).to_string(), "512.000");
-        assert_eq!(i32::decode_bytes(&[0, 7, 208, 1, 3 | NOT_SIGN]).to_string(), "512.001");
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 0, 3 | NOT_SIGN]).to_string(),
+            "512.000"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 1, 3 | NOT_SIGN]).to_string(),
+            "512.001"
+        );
         assert_eq!(
             i32::decode_bytes(&[0, 7, 208, 16, 3 | NOT_SIGN]).to_string(),
             "512.016"
