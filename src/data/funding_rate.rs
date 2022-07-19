@@ -37,13 +37,13 @@ pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<V
     bytes.extend_from_slice(&SymbolPairRepr::from_pair(&funding_rate.pair).to_bytes());
 
     // 7. funding_rate: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_rate.to_string())?);
+    bytes.extend_from_slice(&u64::encode_bytes(&funding_rate.funding_rate.to_string())?);
 
     // 8. funding_time: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_time.to_string())?);
+    bytes.extend_from_slice(&u32::encode_bytes(&(funding_rate.funding_time as u32).to_string())?);
 
     // 9. estimated_rate: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(
+    bytes.extend_from_slice(&u64::encode_bytes(
         &funding_rate.estimated_rate.unwrap().to_string(),
     )?);
 
@@ -75,7 +75,7 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
     // 7. funding_rate: 5 bytes
     let funding_rate = {
         let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
+        u64::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
@@ -86,7 +86,7 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
     // 9. estimated_rate: 5 bytes
     let estimated_rate = {
         let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
+        u64::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
