@@ -206,11 +206,11 @@ impl DataWriter {
                 tracing::trace!("Received a data entry. Processing…");
 
                 // Get the timestamp, and get the identifier.
-                let identifier = get_ident(&filename, &get_timestamp());
+                // let identifier = get_ident(&filename, &get_timestamp());
 
                 // Write file to the specified path.
                 tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
-                let path_to_write = get_ident_path(&identifier);
+                let path_to_write = get_ident_path(&filename);
                 write_content(path_to_write, data.as_slice()).await?;
             }
             WriterAction::Stop => {

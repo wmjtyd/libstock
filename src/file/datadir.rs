@@ -1,6 +1,8 @@
 use concat_string::concat_string;
 use std::path::PathBuf;
 
+use super::timestamp::get_timestamp;
+
 /// Get the data directory.
 ///
 /// Currently, the data directory is `./record`.
@@ -8,6 +10,7 @@ pub fn get_data_directory() -> PathBuf {
     let mut path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
     path.push("record");
+    path.push(get_timestamp());
     path
 }
 
