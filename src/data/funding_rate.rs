@@ -39,8 +39,8 @@ pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<V
     // 7. funding_rate: 5 bytes
     bytes.extend_from_slice(&u64::encode_bytes(&funding_rate.funding_rate.to_string())?);
 
-    // 8. funding_time: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(&(funding_rate.funding_time as u32).to_string())?);
+    // 8. funding_time: 6 bytes
+    bytes.extend_from_slice(&ExchangeTimestampRepr(funding_rate.funding_time).to_bytes());
 
     // 9. estimated_rate: 5 bytes
     bytes.extend_from_slice(&u64::encode_bytes(
