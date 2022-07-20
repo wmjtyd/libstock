@@ -3,7 +3,7 @@
 use chrono::{Duration, Local};
 use std::{fs::File, io::Read};
 
-use crate::file::{datadir::get_ident_path, ident::get_ident, timestamp::fmt_timestamp};
+use crate::file::{datadir::get_ident_path, timestamp::fmt_timestamp};
 
 pub struct FileReader {
     file: File,
@@ -15,8 +15,8 @@ impl FileReader {
         let timestamp = fmt_timestamp(&time);
         tracing::info!("Creating a writer to read {filename}, timestamp {timestamp}");
 
-        let identifier = get_ident(&filename, &timestamp);
-        let path = get_ident_path(&identifier);
+        // let identifier = get_ident(&filename, &timestamp);
+        let path = get_ident_path(&filename);
 
         File::open(path).map(|file| FileReader { file })
     }
