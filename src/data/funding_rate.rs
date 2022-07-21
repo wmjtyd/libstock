@@ -36,14 +36,14 @@ pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<V
     // 6. SYMBOL: 2 字节信息标识
     bytes.extend_from_slice(&SymbolPairRepr::from_pair(&funding_rate.pair).to_bytes());
 
-    // 7. funding_rate: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_rate.to_string())?);
+    // 7. funding_rate: 10 bytes
+    bytes.extend_from_slice(&u64::encode_bytes(&funding_rate.funding_rate.to_string())?);
 
-    // 8. funding_time: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(&funding_rate.funding_time.to_string())?);
+    // 8. funding_time: 6 bytes
+    bytes.extend_from_slice(&ExchangeTimestampRepr(funding_rate.funding_time).to_bytes());
 
-    // 9. estimated_rate: 5 bytes
-    bytes.extend_from_slice(&u32::encode_bytes(
+    // 9. estimated_rate: 10 bytes
+    bytes.extend_from_slice(&u64::encode_bytes(
         &funding_rate.estimated_rate.unwrap().to_string(),
     )?);
 
@@ -72,21 +72,21 @@ pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> 
     // 6. SYMBOL_PAIR: 2 字节信息标识
     let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
 
-    // 7. funding_rate: 5 bytes
+    // 7. funding_rate: 10 bytes
     let funding_rate = {
         let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
+        u64::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
 
-    // 8. funding_time: 5 bytes
+    // 8. funding_time: 6 bytes
     let funding_time = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
 
-    // 9. estimated_rate: 5 bytes
+    // 9. estimated_rate: 10 bytes
     let estimated_rate = {
         let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
+        u64::decode_bytes(&raw_bytes)
             .to_f64()
             .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
     };
