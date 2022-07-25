@@ -11,6 +11,7 @@
 - `file/hex`: removed two deprecated methods
 - `file/reader`: move path to `<date>/<name>.csv`
 - Updated the fields of `data`.
+- `file/datadir`: need to pass a timestamp
 
 ### Unreleased: 0.3.0 – Features
 
@@ -35,6 +36,7 @@
 
 - Upgrade `crypto-crawler-rs` to `92aee0d37e228e53dd994a17058a7f819e005446`
   - Clean up the unnecessary dependencies.
+- Deprecated `file/ident`.
 
 ### Unreleased: 0.3.0 – Tests
 

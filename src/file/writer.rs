@@ -11,11 +11,9 @@ use tokio::{fs::OpenOptions, task::JoinHandle};
 use tracing::Instrument;
 use uuid::Uuid;
 
-use super::{
-    datadir::{get_data_directory, get_ident_path},
-    ident::get_ident,
-    timestamp::get_timestamp,
-};
+use crate::file::timestamp::get_timestamp;
+
+use super::datadir::get_ident_path;
 
 /// A owned data entry to send to a [`DataWriter`].
 ///
@@ -121,54 +119,45 @@ impl DataWriter {
 
     /// Spawn the writer daemon.
     pub async fn start(&self) -> WriteResult<JoinHandle<()>> {
+        let receiver = self.receiver.clone();
+
+        tracing::info!("Starting daemon…");
         let span = tracing::info_span!(
-            "DataWriter::start",
+            "DataWriter::daemon",
             id = self.writer_id.to_string().as_str()
         );
+        Ok(tokio::task::spawn(
+            async move {
+                loop {
+                    let task = async {
+                        let action = receiver
+                            .recv_async()
+                            .await
+                            .map_err(DaemonError::RecvActionFailed)?;
 
-        async move {
-            let data_dir = Self::get_data_dir();
-            Self::create_data_dir(data_dir.as_path()).await?;
+                        Self::process_action(action).await
+                    };
 
-            let receiver = self.receiver.clone();
-
-            tracing::info!("Starting daemon…");
-            let span = tracing::info_span!("daemon");
-            Ok(tokio::task::spawn(
-                async move {
-                    loop {
-                        let task = async {
-                            let action = receiver
-                                .recv_async()
-                                .await
-                                .map_err(DaemonError::RecvActionFailed)?;
-
-                            Self::process_action(action).await
-                        };
-
-                        if let Err(e) = task.await {
-                            match e {
-                                DaemonError::StopDaemon => {
-                                    tracing::trace!("Received the forwarded “StopDaemon” request.");
-                                    break;
-                                }
-                                DaemonError::RecvActionFailed(flume::RecvError::Disconnected) => {
-                                    tracing::error!("Failed to receive on the closed channel.");
-                                    break;
-                                }
-                                _ => {
-                                    tracing::error!("Error happened: {e}; skipping.");
-                                    continue;
-                                }
+                    if let Err(e) = task.await {
+                        match e {
+                            DaemonError::StopDaemon => {
+                                tracing::trace!("Received the forwarded “StopDaemon” request.");
+                                break;
+                            }
+                            DaemonError::RecvActionFailed(flume::RecvError::Disconnected) => {
+                                tracing::error!("Failed to receive on the closed channel.");
+                                break;
+                            }
+                            _ => {
+                                tracing::error!("Error happened: {e}; skipping.");
+                                continue;
                             }
                         }
                     }
                 }
-                .instrument(span),
-            ))
-        }
-        .instrument(span)
-        .await
+            }
+            .instrument(span),
+        ))
     }
 
     /// Stop the writer daemon.
@@ -180,37 +169,17 @@ impl DataWriter {
             .map_err(|_| WriteError::PushChannelFailed)
     }
 
-    fn get_data_dir() -> PathBuf {
-        let data_dir = get_data_directory();
-        tracing::info!("The files will be saved in: {}", data_dir.display());
-
-        data_dir
-    }
-
-    async fn create_data_dir(data_dir: &Path) -> WriteResult<()> {
-        if data_dir.exists() {
-            tracing::debug!("The data directory has been created. Ignoring.");
-        } else {
-            tracing::info!("Creating the data directory…");
-            tokio::fs::create_dir_all(data_dir)
-                .await
-                .map_err(WriteError::DataDirCreationFailed)?;
-        }
-
-        Ok(())
-    }
-
     async fn process_action(action: WriterAction) -> Result<(), DaemonError> {
         match action {
             WriterAction::FileWrite(DataEntry { filename, data }) => {
                 tracing::trace!("Received a data entry. Processing…");
 
-                // Get the timestamp, and get the identifier.
-                // let identifier = get_ident(&filename, &get_timestamp());
+                let timestamp = get_timestamp();
 
                 // Write file to the specified path.
                 tracing::debug!("Writing ”{filename}“, data_len: {len}…", len = data.len());
-                let path_to_write = get_ident_path(&filename);
+                let path_to_write = get_ident_path(&timestamp, &filename);
+
                 write_content(path_to_write, data.as_slice()).await?;
             }
             WriterAction::Stop => {
@@ -236,9 +205,32 @@ impl Default for DataWriter {
     }
 }
 
-async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteResult<()> {
+async fn check_or_create_parent_dir(path: &Path) -> WriteResult<()> {
+    // Check if the parent directory exists.
+    let parent_dir = path.parent();
+    match parent_dir {
+        None => return Err(WriteError::InvalidPath(path.to_path_buf())),
+        Some(parent_dir) => {
+            if !parent_dir.exists() {
+                tracing::debug!("Creating the parent directory: {}", parent_dir.display());
+                tokio::fs::create_dir_all(parent_dir)
+                    .await
+                    .map_err(WriteError::DataDirCreationFailed)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn write_content(path: impl AsRef<Path>, data: &[u8]) -> WriteResult<()> {
     use tokio::io::AsyncWriteExt;
 
+    let path = path.as_ref();
+
+    check_or_create_parent_dir(path).await?;
+
+    tracing::debug!("Opening {} to write…", path.display());
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -265,6 +257,9 @@ async fn write_content(path: impl AsRef<std::path::Path>, data: &[u8]) -> WriteR
 
 #[derive(Debug, thiserror::Error)]
 pub enum WriteError {
+    #[error("invalid path to write: {0}")]
+    InvalidPath(PathBuf),
+
     #[error("failed to create data directory: {0}")]
     DataDirCreationFailed(tokio::io::Error),
 

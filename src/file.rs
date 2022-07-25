@@ -1,6 +1,8 @@
 //! The file writer daemon, reader and identifier generator of `libstock`.
 
+#[deprecated(since = "0.4.0", note = "We don't use this identifier anymore.")]
 pub mod ident;
+
 pub mod reader;
 pub mod timestamp;
 pub mod writer;
