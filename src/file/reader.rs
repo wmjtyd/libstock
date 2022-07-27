@@ -3,7 +3,7 @@
 use chrono::{Duration, Local};
 use std::{fs::File, io::Read};
 
-use crate::file::{datadir::get_ident_path, ident::get_ident, timestamp::fmt_timestamp};
+use crate::file::{datadir::get_ident_path, timestamp::fmt_timestamp};
 
 pub struct FileReader {
     file: File,
@@ -13,10 +13,9 @@ impl FileReader {
     pub fn new(filename: String, day: i64) -> std::io::Result<FileReader> {
         let time = Local::now() - Duration::days(day);
         let timestamp = fmt_timestamp(&time);
-        tracing::info!("Creating a writer to read {filename}, timestamp {timestamp}");
 
-        let identifier = get_ident(&filename, &timestamp);
-        let path = get_ident_path(&identifier);
+        let path = get_ident_path(&timestamp, &filename);
+        tracing::info!("Creating a writer to read {path}", path = path.display());
 
         File::open(path).map(|file| FileReader { file })
     }

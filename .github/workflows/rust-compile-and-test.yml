@@ -19,8 +19,8 @@ jobs:
       - name: Install nanomsg
         run: bash scripts/ci_install_nanomsg.sh
       - name: Build
-        run: cargo build --verbose --features vendored-zeromq
+        run: cargo build --verbose
       - name: Run tests
         run: |
-          cargo nextest run --features vendored-zeromq
-          cargo test --doc --features vendored-zeromq
+          cargo nextest run
+          cargo test --doc

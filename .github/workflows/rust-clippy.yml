@@ -16,4 +16,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Check formatting
-        run: cargo clippy --features vendored-zeromq
+        run: cargo clippy

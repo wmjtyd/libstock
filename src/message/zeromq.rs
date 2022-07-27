@@ -1,165 +1,127 @@
-//! A basic encap methods of [`zmq`].
+//! A basic encap methods of [`zeromq`].
 
-use zmq::{Context, Socket};
+use tokio::io::{self, AsyncRead, AsyncWrite};
+use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
 
-use std::io::{Read, Write};
+pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
+pub use PubSocket as Pub;
+pub use SubSocket as Sub;
+
 use std::ops::{Deref, DerefMut};
+use std::task::Poll;
 
-pub use zmq::Error as MessageError;
-pub use zmq::Result as MessageResult;
-pub use zmq::SocketType;
+use super::AsyncSubscribe;
 
-use super::Subscribe;
-
-/// A basic encap of [`zmq::Context`] for subscribing and publishing.
-pub struct Zeromq {
-    socket: Socket,
+/// A basic encap of [`zeromq`] for subscribing and publishing.
+pub struct Zeromq<T> {
+    socket: T,
 }
 
-impl Zeromq {
-    /// Construct a [`Zeromq`] instance.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
-    ///
-    /// // The both are equivalent: It will create a publishable Nanomsg socket.
-    /// let pub_zeromq = Zeromq::new_publish("tcp://127.0.0.1:5432");
-    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::PUB);
-    /// ```
-    pub fn new(uri: &str, socket_type: SocketType) -> MessageResult<Self> {
-        use SocketType::{PUB, SUB};
-
-        let context = Context::new();
-        let socket = context.socket(socket_type)?;
-
-        match socket_type {
-            PUB => {
-                socket.bind(uri)?;
-            }
-            SUB => {
-                socket.connect(uri)?;
-            }
-            _ => unimplemented!(),
-        }
-
-        Ok(Zeromq { socket })
-    }
-
-    /// Construct a publishable [`Zeromq`] instance.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
-    ///
-    /// // The both are equivalent: It will create a publishable Nanomsg socket.
-    /// let pub_zeromq = Zeromq::new_publish("tcp://127.0.0.1:5432");
-    /// let pub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::PUB);
-    /// ```
-    pub fn new_publish(path: &str) -> MessageResult<Self> {
-        Self::new(path, SocketType::PUB)
-    }
-
-    /// Construct a subscribable [`Zeromq`] instance.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use wmjtyd_libstock::message::zeromq::{Zeromq, SocketType};
-    ///
-    /// // The both are equivalent: It will create a publishable Nanomsg socket.
-    /// let sub_zeromq = Zeromq::new_subscribe("tcp://127.0.0.1:5432");
-    /// let sub_zeromq = Zeromq::new("tcp://127.0.0.1:5432", SocketType::SUB);
-    /// ```
-    pub fn new_subscribe(path: &str) -> MessageResult<Self> {
-        Self::new(path, SocketType::SUB)
+impl Zeromq<PubSocket> {
+    pub async fn new(path: &str) -> ZmqResult<Self> {
+        let mut pub_socket = Zeromq {
+            socket: PubSocket::new(),
+        };
+        pub_socket.bind(path).await?;
+        // 空消息
+        pub_socket.send(ZmqMessage::from("")).await?;
+        Ok(pub_socket)
     }
 }
 
-impl Deref for Zeromq {
-    type Target = Socket;
+impl Zeromq<SubSocket> {
+    pub async fn new(path: &str) -> ZmqResult<Self> {
+        let mut sub_socket = Zeromq {
+            socket: SubSocket::new(),
+        };
+        sub_socket.connect(path).await?;
+        Ok(sub_socket)
+    }
+}
 
-    /// Get the underlying [`Socket`] instance.
+impl<T> Deref for Zeromq<T> {
+    type Target = T;
+
     fn deref(&self) -> &Self::Target {
         &self.socket
     }
 }
 
-impl DerefMut for Zeromq {
+impl<T> DerefMut for Zeromq<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.socket
     }
 }
 
-impl Read for Zeromq {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let response = self.socket.recv_bytes(0);
+impl AsyncRead for Zeromq<SubSocket> {
+    fn poll_read(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        let mut response = self.socket.recv();
 
-        match response {
-            Ok(n) => {
-                buf.copy_from_slice(&n);
-                Ok(n.len())
+        let data = response.as_mut().poll(cx);
+
+        match data {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Err(e)) => {
+                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
             }
-            Err(e) => Err(e.into()),
+            Poll::Ready(Ok(data)) => {
+                let data: Result<Vec<u8>, _> = data.try_into();
+
+                match data {
+                    Ok(data) => {
+                        buf.put_slice(&data);
+                        Poll::Ready(Ok(()))
+                    }
+                    Err(e) => Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string()))),
+                }
+            }
         }
     }
 }
 
-impl Write for Zeromq {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let response = self.socket.send(buf, 0);
+impl AsyncWrite for Zeromq<PubSocket> {
+    fn poll_write(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &[u8],
+    ) -> Poll<Result<usize, std::io::Error>> {
+        let buf = buf.to_vec();
+        let buf_len = buf.len();
+        let mut task = self.socket.send(ZmqMessage::from(buf));
 
-        match response {
-            Ok(()) => Ok(buf.len()),
-            Err(e) => Err(e.into()),
+        match task.as_mut().poll(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Err(e)) => {
+                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
+            }
+            Poll::Ready(Ok(())) => Poll::Ready(Ok(buf_len)),
         }
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
         unimplemented!("Zeromq does not support flush.")
     }
-}
 
-impl Subscribe for Zeromq {
-    type Result = MessageResult<()>;
-
-    fn subscribe(&mut self, topic: &str) -> Self::Result {
-        self.socket.set_subscribe(topic.as_bytes())
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        unimplemented!("Shutdown with `self.socket.close()`.")
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[cfg(with_zeromq_test)]
-    #[test]
-    fn test_zeromq_pub_sub() {
-        use crate::message::zeromq::Zeromq;
-        use std::io::{Read, Write};
+#[async_trait::async_trait]
+impl AsyncSubscribe for Zeromq<SubSocket> {
+    type Result = ZmqResult<()>;
 
-        const LISTEN_ADDRESS: &str = "tcp://127.0.0.1:10352";
-
-        let mut pub_zeromq =
-            Zeromq::new_publish(LISTEN_ADDRESS).expect("failed to create Zeromq publish socket");
-        let mut sub_zeromq = Zeromq::new_subscribe(LISTEN_ADDRESS)
-            .expect("failed to create Zeromq subscribe socket");
-
-        sub_zeromq
-            .subscribe("TEST")
-            .expect("failed to set subscribe");
-
-        let content = b"TEST Hello, World!";
-        let mut recv_buf = [0u8; 18];
-
-        pub_zeromq
-            .write_all(content)
-            .expect("failed to write to pub_zeromq");
-        let written = sub_zeromq
-            .read(&mut recv_buf)
-            .expect("failed to read from sub_zeromq");
-
-        assert_eq!(content, &recv_buf);
-        assert_eq!(written, content.len());
+    async fn subscribe(&mut self, topic: &str) -> Self::Result {
+        self.socket.subscribe(topic).await
     }
 }

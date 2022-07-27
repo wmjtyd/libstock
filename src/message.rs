@@ -16,3 +16,13 @@ pub trait Subscribe: Read {
     /// Subscribe a topic.
     fn subscribe(&mut self, topic: &str) -> Self::Result;
 }
+
+/// The trait for implementing the subscriber of a topic.
+#[async_trait::async_trait]
+pub trait AsyncSubscribe: tokio::io::AsyncRead {
+    /// The return value of `subscribe()`
+    type Result;
+
+    /// Subscribe a topic.
+    async fn subscribe(&mut self, topic: &str) -> Self::Result;
+}

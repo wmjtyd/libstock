@@ -8,6 +8,10 @@
   - For better backtrace
 - `file/writer`: Set the size of the length field of written data structure to 2 bytes.
   - It used to be 'usize'. It is an implementation mistake.
+- `file/hex`: removed two deprecated methods
+- `file/reader`: move path to `<date>/<name>.csv`
+- Updated the fields of `data`.
+- `file/datadir`: need to pass a timestamp
 
 ### Unreleased: 0.3.0 – Features
 
@@ -16,6 +20,9 @@
   - (beta 2) implement DerefMut to `Socket` for `message`
 - `message`: Add `Subscribe` trait for generalize `subscribe()` method.
   - `zeromq` and `nanomsg` both have implemented this.
+- `file/hex`: Add the encode/decode capability for negative numbers
+  - WIP: currently dirty but works.
+- `message/zeromq`: migrate to the ZeroMQ implemented in Rust.
 
 ### Unreleased: 0.3.0 – Bug fixes
 
@@ -29,6 +36,7 @@
 
 - Upgrade `crypto-crawler-rs` to `92aee0d37e228e53dd994a17058a7f819e005446`
   - Clean up the unnecessary dependencies.
+- Deprecated `file/ident`.
 
 ### Unreleased: 0.3.0 – Tests
 
@@ -44,7 +52,6 @@
 ### Unreleased: 0.3.0 – CI
 
 - Install `nanomsg` for `message` test.
-- Enable `vendored-zeromq` in CI by default.
 - Introduce `cargo nextest` for faster build.
 
 ## 0.2.0

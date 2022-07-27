@@ -57,155 +57,199 @@ pub fn six_byte_hex_to_unix_ms(encoded_timestamp: &[u8; 6]) -> u64 {
 ///
 /// We currently support two variants:
 ///
-/// - `u32`: 5-byte encoding & decoding.
-/// - `u64`: 10-byte encoding & decoding.
+/// - `i32` or `u32`: 5-byte encoding & decoding.
+/// - `i64` or `u64`: 10-byte encoding & decoding.
 ///
 /// # Examples
 ///
 /// ```
 /// use wmjtyd_libstock::data::hex::{NumToBytesExt, HexDataError};
 ///
-/// assert!(matches!(u32::encode_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
-/// assert_eq!(u32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
+/// assert!(matches!(i32::encode_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
+/// assert_eq!(i32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
 ///
-/// assert!(matches!(u64::encode_bytes("12800000000"), Ok(v) if v == [0, 0, 0, 0, 2, 250, 240, 128, 0, 0]));
-/// assert_eq!(u64::decode_bytes(&[0, 0, 0, 0, 2, 250, 240, 128, 0, 0]).to_string(), "12800000000");
+/// assert!(matches!(i64::encode_bytes("12800000000"), Ok(v) if v == [0, 0, 0, 0, 2, 250, 240, 128, 0, 0]));
+/// assert_eq!(i64::decode_bytes(&[0, 0, 0, 0, 2, 250, 240, 128, 0, 0]).to_string(), "12800000000");
 /// ```
 pub trait NumToBytesExt<const LEN: usize> {
-    /// Encode a number string to bytes.
+    /// Encode a number string to [`u8`] bytes.
     fn encode_bytes(value: &str) -> HexDataResult<[u8; LEN]>;
 
-    /// Decode the specified bytes to a [`Decimal`].
+    /// Decode the specified [`u8`] bytes to a [`Decimal`].
     fn decode_bytes(value: &[u8; LEN]) -> Decimal;
-}
 
-impl NumToBytesExt<5> for u32 {
-    /// Encode a number string to bytes.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use wmjtyd_libstock::data::hex::{NumToBytesExt, HexDataError};
-    ///
-    /// assert!(matches!(u32::encode_bytes("1280"), Ok(v) if v == [0, 0, 5, 0, 0]));
-    /// assert!(matches!(u32::encode_bytes("25600"), Ok(v) if v == [0, 0, 100, 0, 0]));
-    /// assert!(matches!(u32::encode_bytes("512000"), Ok(v) if v == [0, 7, 208, 0, 0]));
-    /// assert!(matches!(u32::encode_bytes("10240000"), Ok(v) if v == [0, 156, 64, 0, 0]));
-    ///
-    /// assert!(matches!(u32::encode_bytes("512.000"), Ok(v) if v == [0, 7, 208, 0, 3]));
-    /// assert!(matches!(u32::encode_bytes("512.001"), Ok(v) if v == [0, 7, 208, 1, 3]));
-    /// assert!(matches!(u32::encode_bytes("512.016"), Ok(v) if v == [0, 7, 208, 16, 3]));
-    ///
-    /// // Encode a number string to i8 bytes.
-    /// {
-    ///     let encoded_u8 = u32::encode_bytes("10000000.99").unwrap();
-    ///     let encoded_i8 = unsafe { std::slice::from_raw_parts(encoded_u8.as_ptr() as *const i8, encoded_u8.len()) };
-    ///     assert_eq!(encoded_i8, &[59i8, -102, -54, 99, 2]);
-    /// }
-    ///
-    /// assert!(matches!(
-    ///     u32::encode_bytes("Hello!"),
-    ///     Err(HexDataError::StrNumParseError(_))
-    /// ));
-    /// ```
-    fn encode_bytes(value: &str) -> HexDataResult<[u8; 5]> {
-        let mut result = [0u8; 5];
+    /// Encode a number string to [`i8`] bytes safely.
+    fn encode_i8_bytes(value: &str) -> HexDataResult<[i8; LEN]> {
+        let encoded_u8 = Self::encode_bytes(value)?;
 
-        // if value.find("E-") != Some(0) {
-        //     let split: Vec<&str> = value.split("E-").collect();
-        //     let a = split[1];
-        //     e = a.parse().unwrap();
-        //     value = split[0].to_string();
-        // }
-
-        let (num_str, scale) = float_to_num_with_scale(value);
-
-        let num = num_str.parse::<Self>()?.to_be_bytes();
-        result[..4].copy_from_slice(&num);
-        result[4] = scale;
-
-        Ok(result)
+        Ok(encoded_u8.map(|v| v as i8))
     }
 
-    /// Decode the specified bytes to a [`Decimal`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use wmjtyd_libstock::data::hex::{NumToBytesExt, HexDataError};
-    ///
-    /// assert_eq!(u32::decode_bytes(&[0, 0, 5, 0, 0]).to_string(), "1280");
-    /// assert_eq!(u32::decode_bytes(&[0, 0, 100, 0, 0]).to_string(), "25600");
-    /// assert_eq!(
-    ///     u32::decode_bytes(&[0, 7, 208, 0, 0]).to_string(),
-    ///     "512000"
-    /// );
-    /// assert_eq!(
-    ///     u32::decode_bytes(&[0, 156, 64, 0, 0]).to_string(),
-    ///     "10240000"
-    /// );
-    ///
-    /// assert_eq!(
-    ///     u32::decode_bytes(&[0, 7, 208, 0, 3]).to_string(),
-    ///     "512.000"
-    /// );
-    /// assert_eq!(
-    ///     u32::decode_bytes(&[0, 7, 208, 1, 3]).to_string(),
-    ///     "512.001"
-    /// );
-    /// assert_eq!(
-    ///     u32::decode_bytes(&[0, 7, 208, 16, 3]).to_string(),
-    ///     "512.016"
-    /// );
-    ///
-    /// // Decode a i8 bytes to a number string
-    /// {
-    ///     let raw_i8 = [59i8, -102, -54, 99, 2];
-    ///     let raw_u8: &[u8; 5] = unsafe { std::slice::from_raw_parts(raw_i8.as_ptr() as *const u8, raw_i8.len()) }
-    ///         .try_into().expect("failed to convert [i8; 5] to [u8; 5]");
-    ///     assert_eq!(u32::decode_bytes(raw_u8).to_string(), "10000000.99");
-    /// }
-    /// ```
-    fn decode_bytes(value: &[u8; 5]) -> Decimal {
-        let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 0, 4]) as i64;
+    /// Decode a number string to [`i8`] bytes safely.
+    fn decode_i8_bytes(value: &[i8; LEN]) -> Decimal {
+        let encoded_u8 = value.map(|v| v as u8);
 
-        let scale_part = u32::from_be_bytes({
-            let raw = value[4];
-
-            [0, 0, 0, raw]
-        });
-
-        Decimal::new(num_part, scale_part)
+        Self::decode_bytes(&encoded_u8)
     }
 }
 
-impl NumToBytesExt<10> for u64 {
-    // WIP: examples
-    fn encode_bytes(value: &str) -> HexDataResult<[u8; 10]> {
-        let mut result = [0u8; 10];
+// Really dirty…
+trait WtfUnsignedPolyfill {
+    type SignedType;
+    type UnsignedType;
 
-        let (num_str, scale) = float_to_num_with_scale(value);
-
-        let num = num_str.parse::<Self>()?.to_be_bytes();
-        result[1..9].copy_from_slice(&num);
-        result[9] = scale;
-
-        Ok(result)
+    fn signum(&self) -> Self::SignedType {
+        unreachable!()
     }
-
-    // WIP: examples
-    fn decode_bytes(value: &[u8; 10]) -> Decimal {
-        let num_part = Self::from_be_bytes(*arrayref::array_ref![value, 1, 8]) as i64;
-
-        let scale_part = u32::from_be_bytes({
-            let raw = value[9];
-
-            [0, 0, 0, raw]
-        });
-
-        Decimal::new(num_part, scale_part)
+    fn unsigned_abs(&self) -> Self::UnsignedType {
+        unreachable!()
     }
 }
+
+impl WtfUnsignedPolyfill for u32 {
+    type SignedType = i32;
+    type UnsignedType = u32;
+}
+impl WtfUnsignedPolyfill for u64 {
+    type SignedType = i64;
+    type UnsignedType = u64;
+}
+
+macro_rules! build_opt_enc_mod {
+    // Function definition for encoding.
+    (@encfn $num_type:ty, $len: expr, $sign_needed: expr) => {
+        fn encode_bytes(value: &str) -> HexDataResult<[u8; $len]> {
+            let mut result = [0u8; $len];
+
+            let (num_str, scale) = float_to_num_with_scale(value);
+
+            let num = num_str.parse::<$num_type>()?;
+
+            // Don't mind this if-block; compiler will optimize this.
+            //
+            // For example:
+            //     if (true) { 1 } else { 0 }
+            // Rust will compile it to:
+            //     1
+            let (bytes, scale) = if ($sign_needed) {
+                let sign = num.signum();
+                let bytes = num.unsigned_abs().to_be_bytes();
+                (
+                    bytes,
+                    if sign == -1 {
+                        // 0x7f is mask
+                        // 0x80 is sign
+                        (scale & 0x7f) | 0x80
+                    } else {
+                        scale
+                    }
+                )
+            } else {
+                (num.to_be_bytes(), scale)
+            };
+
+            // The begin offset of our data.
+            let begin = build_opt_enc_mod!(@decbegin $len);
+            // The index next to the end of number data.
+            let end = begin + build_opt_enc_mod!(@decsize $len);
+            // The end of our data, which is our scale.
+            let scale_idx = end;
+
+            result[begin..end].copy_from_slice(&bytes);
+            result[scale_idx] = scale;
+
+            Ok(result)
+        }
+    };
+
+    // arrayref's begin offset
+    (@decbegin $len:expr) => {
+        if $len == 5 {
+            0
+        } else {
+            1
+        }
+    };
+
+    // arrayref's pick length
+    (@decsize $len:expr) => {
+        if $len == 5 {
+            4
+        } else {
+            8
+        }
+    };
+
+    // Function definition for decoding.
+    (@decfn $num_type:ty, $len: expr, $sign_needed: expr) => {
+        fn decode_bytes(value: &[u8; $len]) -> Decimal {
+            let num_part = Self::from_be_bytes(*arrayref::array_ref![
+                value,
+                build_opt_enc_mod!(@decbegin $len),
+                build_opt_enc_mod!(@decsize $len)
+            ]) as i64;
+
+            // The index where scale is.
+            let scale_idx =
+                build_opt_enc_mod!(@decbegin $len) +
+                build_opt_enc_mod!(@decsize $len);
+
+            // Don't mind this if-block; compiler will optimize this.
+            //
+            // For example:
+            //     if (true) { 1 } else { 0 }
+            // Rust will compile it to:
+            //     1
+            if ($sign_needed) {
+                // Principle
+                // =========
+                //
+                // 1 1 0 1 - 1 1 1 0
+                // 0 1 1 1 - 1 1 1 1  mask (&)
+                // 0 1 0 1 - 1 1 1 0
+                // 正负  >> 7
+                // 小數  0 1 1 1 - 1 1 1 1  mask (&)
+
+                // float index num
+                let raw = value[scale_idx];
+
+                // false is Positive numbers
+                // true is Negative numbers
+                let sign = raw >> 7 != 0;
+
+                // 0x7f is mask
+                let scale_part = (raw & 0x7f) as u32;
+
+                let mut decimal = Decimal::new(num_part, scale_part);
+                decimal.set_sign_negative(sign);
+                decimal
+            } else {
+                // This is the optimized code for unsigned number
+                // It doesn't have some unnecessary determination.
+                let scale_part = u32::from_be_bytes([0, 0, 0, value[scale_idx]]);
+                let decimal = Decimal::new(num_part, scale_part);
+                decimal
+            }
+        }
+    };
+
+    // Function definition for a impl block.
+    (@impl $num_type:ty, $len: expr, $sign_needed: expr) => {
+        build_opt_enc_mod!(@encfn $num_type, $len, $sign_needed);
+        build_opt_enc_mod!(@decfn $num_type, $len, $sign_needed);
+    };
+
+    ($num_type:ty, $len: expr, $sign_needed: expr) => {
+        impl NumToBytesExt<$len> for $num_type {
+            build_opt_enc_mod!(@impl $num_type, $len, $sign_needed);
+        }
+    };
+}
+
+build_opt_enc_mod!(i32, 5, true);
+build_opt_enc_mod!(i64, 10, true);
+build_opt_enc_mod!(u32, 5, false);
+build_opt_enc_mod!(u64, 10, false);
 
 /// Extract a float number string to a number string with a scale.
 type NumberString = String;
@@ -222,16 +266,6 @@ fn float_to_num_with_scale(value: &str) -> (NumberString, Scale) {
     (value, scale_point_indicator)
 }
 
-#[deprecated(note = "use u32::encode_bytes instead")]
-pub fn encode_num_to_bytes(value: &str) -> HexDataResult<[u8; 5]> {
-    u32::encode_bytes(value)
-}
-
-#[deprecated(note = "use u32::decode_bytes instead")]
-pub fn decode_bytes_to_num(value: &[u8; 5]) -> Decimal {
-    u32::decode_bytes(value)
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum HexDataError {
     #[error("unable to encode a string to number: {0}")]
@@ -239,3 +273,113 @@ pub enum HexDataError {
 }
 
 pub type HexDataResult<T> = Result<T, HexDataError>;
+
+#[cfg(test)]
+mod tests {
+    // For readability.
+    #![allow(clippy::identity_op)]
+
+    use super::{HexDataError, NumToBytesExt};
+
+    const SIGN: u8 = 0x80;
+
+    // Meaningless behavior
+    // For readability of the code only
+    const NOT_SIGN: u8 = 0x00;
+
+    #[test]
+    fn test_5b_encode() {
+        assert_eq!(
+            i32::encode_bytes("1280").unwrap(),
+            [0, 0, 5, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("25600").unwrap(),
+            [0, 0, 100, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512000").unwrap(),
+            [0, 7, 208, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("10240000").unwrap(),
+            [0, 156, 64, 0, 0 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("-10240000").unwrap(),
+            [0, 156, 64, 0, 0 | SIGN]
+        );
+
+        assert_eq!(
+            i32::encode_bytes("512.000").unwrap(),
+            [0, 7, 208, 0, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.001").unwrap(),
+            [0, 7, 208, 1, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("512.016").unwrap(),
+            [0, 7, 208, 16, 3 | NOT_SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("-10240000.1").unwrap(),
+            [6, 26, 128, 1, 1 | SIGN]
+        );
+        assert_eq!(
+            i32::encode_bytes("-10240000.12").unwrap(),
+            [61, 9, 0, 12, 2 | SIGN]
+        );
+
+        assert!(matches!(
+            i32::encode_bytes("Hello!"),
+            Err(HexDataError::StrNumParseError(_))
+        ));
+    }
+
+    #[test]
+    fn test_5b_decode() {
+        assert_eq!(
+            i32::decode_bytes(&[0, 0, 5, 0, 0x00 | NOT_SIGN]).to_string(),
+            "1280"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 0, 100, 0, 0x00 | NOT_SIGN]).to_string(),
+            "25600"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 0, 0x00 | NOT_SIGN]).to_string(),
+            "512000"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 156, 64, 0, 0x00 | NOT_SIGN]).to_string(),
+            "10240000"
+        );
+        // 0x00 is
+        assert_eq!(
+            i32::decode_bytes(&[0, 156, 64, 0, 0 | SIGN]).to_string(),
+            "-10240000"
+        );
+
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 0, 3 | NOT_SIGN]).to_string(),
+            "512.000"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 1, 3 | NOT_SIGN]).to_string(),
+            "512.001"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[0, 7, 208, 16, 3 | NOT_SIGN]).to_string(),
+            "512.016"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[6, 26, 128, 1, 1 | SIGN]).to_string(),
+            "-10240000.1"
+        );
+        assert_eq!(
+            i32::decode_bytes(&[61, 9, 0, 12, 2 | SIGN]).to_string(),
+            "-10240000.12"
+        );
+    }
+}
