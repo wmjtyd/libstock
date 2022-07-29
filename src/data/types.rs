@@ -40,6 +40,8 @@ create_bimap!(SYMBOL_PAIR {
     1 => "BTC/USDT",
     2 => "BTC/USD",
     3 => "USDT/USD",
+    4 => "ETH/USDT",
+    5 => "ETH/USD",
 });
 
 create_bimap!(PERIOD {
