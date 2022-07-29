@@ -71,3 +71,24 @@ where
 
     fn deserialize(reader: &mut impl Read) -> Result<Self, Self::Err>;
 }
+
+macro_rules! serialize_block_builder {
+    ($($field:expr),+ => $writer:expr) => {{
+        $(
+            $field.serialize_to_writer($writer)??
+        );+
+    }}
+}
+
+macro_rules! deserialize_block_builder {
+    ($reader:expr => $($field:ident),+) => {{
+        Ok(Self {
+            $(
+                $field: $crate::data::serializer::FieldDeserializer::deserialize_from_reader($reader)??
+            ),+
+        })
+    }}
+}
+
+pub(crate) use serialize_block_builder;
+pub(crate) use deserialize_block_builder;
