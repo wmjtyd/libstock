@@ -10,11 +10,12 @@
 use std::num::ParseFloatError;
 
 use crypto_message::BboMsg;
+use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        ExchangeTimestampField, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
-        PriceDataField, ReceivedTimestampField, SymbolPairField,
+        EndOfDataFlag, ExchangeTimestampField, ExchangeTypeField, FieldError, MarketTypeField,
+        MessageTypeField, PriceDataField, ReceivedTimestampField, SymbolPairField,
     },
     serializer::{
         deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
@@ -22,11 +23,17 @@ use super::{
     },
 };
 
+/// The structure of BBO.
+///
+/// You can take advantage of `builder()`
+/// to construct some fields automatically.
+#[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
 pub struct BboStructure {
     /// 交易所時間戳
     pub exchange_timestamp: ExchangeTimestampField,
 
     /// 收到時間戳
+    #[builder(default)]
     pub received_timestamp: ReceivedTimestampField,
 
     /// 交易所類型 (EXCHANGE)
@@ -48,6 +55,7 @@ pub struct BboStructure {
     pub bids: PriceDataField,
 
     /// 資料結尾
+    #[builder(default)]
     pub end: EndOfDataFlag,
 }
 
@@ -94,22 +102,21 @@ impl TryFrom<&BboMsg> for BboStructure {
     type Error = BboError;
 
     fn try_from(value: &BboMsg) -> Result<Self, Self::Error> {
-        Ok(Self {
-            exchange_timestamp: ExchangeTimestampField(value.timestamp as u64),
-            received_timestamp: ReceivedTimestampField::new_from_now()?,
-            exchange_type: ExchangeTypeField::try_from_str(&value.exchange)?,
-            market_type: MarketTypeField(value.market_type),
-            message_type: MessageTypeField(value.msg_type),
-            symbol: SymbolPairField::from_pair(&value.pair),
-            asks: PriceDataField {
+        Ok(Self::builder()
+            .exchange_timestamp(ExchangeTimestampField(value.timestamp as u64))
+            .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
+            .market_type(MarketTypeField(value.market_type))
+            .message_type(MessageTypeField(value.msg_type))
+            .symbol(SymbolPairField::from_pair(&value.pair))
+            .asks(PriceDataField {
                 price: value.ask_price.to_string(),
                 quantity_base: value.ask_quantity_base.to_string(),
-            },
-            bids: PriceDataField {
+            })
+            .bids(PriceDataField {
                 price: value.bid_price.to_string(),
                 quantity_base: value.bid_quantity_base.to_string(),
-            },
-        })
+            })
+            .build())
     }
 }
 
@@ -150,6 +157,9 @@ pub enum BboError {
 
     #[error("I/O reader/writer error: {0}")]
     IoError(#[from] std::io::Error),
+
+    #[error("The data is ended too early.")]
+    NoEndCharacter,
 }
 
 pub type BboResult<T> = Result<T, BboError>;

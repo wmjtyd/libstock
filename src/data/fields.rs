@@ -56,6 +56,12 @@ impl ReceivedTimestampField {
     }
 }
 
+impl Default for ReceivedTimestampField {
+    fn default() -> Self {
+        Self::new_from_now().expect("failed to get the system time")
+    }
+}
+
 impl FieldSerializer<6> for ReceivedTimestampField {
     type Err = FieldError;
 
