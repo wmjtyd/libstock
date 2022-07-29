@@ -20,7 +20,7 @@ use super::{
     },
 };
 
-/// The timestamp of exchange (6 byte).
+/// The timestamp of exchange (6 bytes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ExchangeTimestampField(pub u64);
 
@@ -40,7 +40,7 @@ impl FieldDeserializer<6> for ExchangeTimestampField {
     }
 }
 
-/// The timestamp when a message such as order and trade received.
+/// The timestamp when a message such as order and trade received (6 bytes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ReceivedTimestampField(pub u64);
 
@@ -72,7 +72,7 @@ impl FieldDeserializer<6> for ReceivedTimestampField {
     }
 }
 
-/// The exchange type of a message.
+/// The exchange type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ExchangeTypeField(pub Exchange);
 
@@ -104,7 +104,7 @@ impl FieldDeserializer<1> for ExchangeTypeField {
     }
 }
 
-/// The market type of a message.
+/// The market type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MarketTypeField(pub MarketType);
 
@@ -132,7 +132,7 @@ impl FieldDeserializer<1> for MarketTypeField {
     }
 }
 
-/// The type of a message.
+/// The type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MessageTypeField(pub MessageType);
 
@@ -152,7 +152,7 @@ impl FieldDeserializer<1> for MessageTypeField {
     }
 }
 
-/// The [`TradeSide`] of a message.
+/// The [`TradeSide`] of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TradeSideField(pub TradeSide);
 
@@ -177,7 +177,7 @@ pub type Symbol = u16;
 /// Unified pair, base/quote, e.g., `BTC/USDT`.
 pub type Pair = String;
 
-/// The symbol of a message.
+/// The symbol of a message (2 bytes).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SymbolPairField(pub Symbol, pub Pair);
 
@@ -211,7 +211,7 @@ impl FieldDeserializer<2> for SymbolPairField {
     }
 }
 
-/// The info type (`asks` or `bids`) of a message.
+/// The info type (`asks` or `bids`) of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct InfoTypeField(pub InfoType);
 
@@ -243,7 +243,7 @@ impl FieldDeserializer<1> for InfoTypeField {
     }
 }
 
-/// The period of a message.
+/// The period of a message (1 byte).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PeriodField(pub String);
 
@@ -274,15 +274,16 @@ impl FieldDeserializer<1> for PeriodField {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// The price data (10 bytes).
 pub struct PriceDataField {
-    /// 價格
+    /// 價格 (5 bytes)
     ///
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
     pub price: String,
 
-    /// 基本量
+    /// 基本量 (5 bytes)
     ///
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
