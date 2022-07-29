@@ -6,8 +6,8 @@
 pub mod hex;
 pub mod serializer;
 
-#[cfg(feature = "crypto")]
-pub mod orderbook;
+// #[cfg(feature = "crypto")]
+// pub mod orderbook;
 
 #[cfg(feature = "crypto")]
 pub mod types;
@@ -15,17 +15,17 @@ pub mod types;
 #[cfg(feature = "crypto")]
 pub mod fields;
 
-#[cfg(feature = "crypto")]
-pub mod order;
+// #[cfg(feature = "crypto")]
+// pub mod order;
 
-#[cfg(feature = "crypto")]
-pub mod trade;
+// #[cfg(feature = "crypto")]
+// pub mod trade;
 
 #[cfg(feature = "crypto")]
 pub mod bbo;
 
-#[cfg(feature = "crypto")]
-pub mod kline;
+// #[cfg(feature = "crypto")]
+// pub mod kline;
 
-#[cfg(feature = "crypto")]
-pub mod funding_rate;
+// #[cfg(feature = "crypto")]
+// pub mod funding_rate;
