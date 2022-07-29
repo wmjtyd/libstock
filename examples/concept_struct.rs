@@ -1,8 +1,8 @@
-use std::io::{Write, Read, self};
+use std::io::{self, Read, Write};
 
 trait ByteSerializer<const LEN: usize>
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -10,7 +10,7 @@ where
 
     /// Serialize the input and write the whole serialized
     /// content to the writer.
-    /// 
+    ///
     /// Note that we wrapped the response from `serialize()`
     /// with a `io::Result`, to respect any possible Err.
     fn serialize_to_writer(&self, writer: &mut impl Write) -> Result<io::Result<()>, Self::Err> {
@@ -22,14 +22,14 @@ where
 
 trait ByteDeserializer<const LEN: usize>
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
     fn deserialize(src: &[u8; LEN]) -> Result<Self, Self::Err>;
-    
+
     /// Read from the writer, and deserialize it.
-    /// 
+    ///
     /// Note that we wrapped the response from `deserialize()`
     /// with a `io::Result`, to respect any possible Err.
     fn deserialize_from_reader(reader: &mut impl Read) -> io::Result<Result<Self, Self::Err>> {
@@ -42,7 +42,7 @@ where
 
 trait StructSerializer
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -51,7 +51,7 @@ where
 
 trait StructDeserializer
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -67,7 +67,7 @@ struct BoolRepr(bool);
 
 impl ByteSerializer<1> for BoolRepr
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err = anyhow::Error;
 
@@ -80,7 +80,7 @@ where
 
 impl ByteDeserializer<1> for BoolRepr
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err = anyhow::Error;
 
@@ -93,7 +93,7 @@ where
 
 impl StructSerializer for Test
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err = anyhow::Error;
 
@@ -107,7 +107,7 @@ where
 
 impl StructDeserializer for Test
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err = anyhow::Error;
 
