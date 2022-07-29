@@ -46,6 +46,9 @@ pub struct BboStructure {
 
     /// 最優買入報價資訊 (bids)
     pub bids: PriceDataField,
+
+    /// 資料結尾
+    pub end: EndOfDataFlag,
 }
 
 impl StructSerializer for BboStructure {
@@ -60,7 +63,8 @@ impl StructSerializer for BboStructure {
             self.message_type,
             self.symbol,
             self.asks,
-            self.bids => writer
+            self.bids,
+            self.end => writer
         );
 
         Ok(())
@@ -80,7 +84,8 @@ impl StructDeserializer for BboStructure {
             message_type,
             symbol,
             asks,
-            bids
+            bids,
+            end
         )
     }
 }

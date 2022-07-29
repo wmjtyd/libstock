@@ -318,6 +318,30 @@ impl FieldDeserializer<10> for PriceDataField {
     }
 }
 
+/// The flag indicated the end of data. (1 byte).
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub struct EndOfDataFlag;
+
+impl FieldSerializer<1> for EndOfDataFlag {
+    type Err = FieldError;
+
+    fn serialize(&self) -> Result<[u8; 1], Self::Err> {
+        Ok([b'\0'])
+    }
+}
+
+impl FieldDeserializer<1> for EndOfDataFlag {
+    type Err = FieldError;
+
+    fn deserialize(src: &[u8; 1]) -> Result<Self, Self::Err> {
+        if src[0] != b'\0' {
+            Err(FieldError::DataEndedTooEarly)
+        } else {
+            Ok(Self)
+        }
+    }
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum FieldError {
     #[error("data/types error: {0}")]
@@ -343,6 +367,9 @@ pub enum FieldError {
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),
+
+    #[error("data ended too early (missing \\0 in the end)!")]
+    DataEndedTooEarly,
 }
 
 pub type FieldResult<T> = Result<T, FieldError>;
@@ -363,7 +390,10 @@ mod tests {
             ExchangeTypeField::try_from_str("crypto").unwrap().0,
             Exchange::Crypto
         );
-        assert_eq!(ExchangeTypeField::try_from_str("ftx").unwrap().0, Exchange::Ftx);
+        assert_eq!(
+            ExchangeTypeField::try_from_str("ftx").unwrap().0,
+            Exchange::Ftx
+        );
         assert_eq!(
             ExchangeTypeField::try_from_str("binance").unwrap().0,
             Exchange::Binance
@@ -376,7 +406,10 @@ mod tests {
             ExchangeTypeField::try_from_str("kucoin").unwrap().0,
             Exchange::Kucoin
         );
-        assert_eq!(ExchangeTypeField::try_from_str("okx").unwrap().0, Exchange::Okx);
+        assert_eq!(
+            ExchangeTypeField::try_from_str("okx").unwrap().0,
+            Exchange::Okx
+        );
     }
 
     #[test]
@@ -409,8 +442,14 @@ mod tests {
 
     #[test]
     fn test_info_type_try_from_str() {
-        assert_eq!(InfoTypeField::try_from_str("asks").unwrap().0, InfoType::Asks);
-        assert_eq!(InfoTypeField::try_from_str("bids").unwrap().0, InfoType::Bids);
+        assert_eq!(
+            InfoTypeField::try_from_str("asks").unwrap().0,
+            InfoType::Asks
+        );
+        assert_eq!(
+            InfoTypeField::try_from_str("bids").unwrap().0,
+            InfoType::Bids
+        );
     }
 
     #[test]
