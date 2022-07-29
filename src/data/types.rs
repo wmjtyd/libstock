@@ -1,5 +1,5 @@
-//! The utilities such as serialization and deserialization
-//! for `crypto-market`'s types.
+//! The types for serialization in [`super::fields`],
+//! such as [`Exchange`], [`InfoType`], etc.
 
 use bimap::BiMap;
 use crypto_market_type::MarketType;

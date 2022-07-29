@@ -1,4 +1,11 @@
-//! The bbo-related operations.
+//! The generalized BBO serialization and deserialization module.
+//!
+//! Currently supported formats:
+//!
+//! - crypto-crawler-rs's [`BboMsg`]
+//!
+//! You can still implement your own format by implementing the [`TryFrom`]
+//! between your structure and [`BboStructure`].
 
 use std::num::ParseFloatError;
 
@@ -6,10 +13,13 @@ use crypto_message::BboMsg;
 
 use super::{
     fields::{
-        ExchangeTimestampField, ExchangeTypeField, MarketTypeField, MessageTypeField,
-        ReceivedTimestampField, FieldError, SymbolPairField, PriceDataField,
+        ExchangeTimestampField, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+        PriceDataField, ReceivedTimestampField, SymbolPairField,
     },
-    serializer::{StructSerializer, FieldSerializer, serialize_block_builder, StructDeserializer, deserialize_block_builder},
+    serializer::{
+        deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
+        StructSerializer,
+    },
 };
 
 pub struct BboStructure {
@@ -30,7 +40,7 @@ pub struct BboStructure {
 
     /// SYMBOL
     pub symbol: SymbolPairField,
-    
+
     /// 最優賣出報價資訊 (asks)
     pub asks: PriceDataField,
 
@@ -82,7 +92,7 @@ impl TryFrom<&BboMsg> for BboStructure {
         Ok(Self {
             exchange_timestamp: ExchangeTimestampField(value.timestamp as u64),
             received_timestamp: ReceivedTimestampField::new_from_now()?,
-            exchange_type: ExchangeTypeField::from_str(&value.exchange)?,
+            exchange_type: ExchangeTypeField::try_from_str(&value.exchange)?,
             market_type: MarketTypeField(value.market_type),
             message_type: MessageTypeField(value.msg_type),
             symbol: SymbolPairField::from_pair(&value.pair),
@@ -147,7 +157,7 @@ mod tests {
     use crypto_market_type::MarketType;
     use crypto_message::BboMsg;
 
-    use crate::data::serializer::{StructSerializer, StructDeserializer};
+    use crate::data::serializer::{StructDeserializer, StructSerializer};
 
     use super::BboStructure;
 
