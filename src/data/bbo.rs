@@ -1,131 +1,140 @@
 //! The bbo-related operations.
 
-use std::io::BufReader;
+use std::num::ParseFloatError;
 
 use crypto_message::BboMsg;
-use rust_decimal::prelude::ToPrimitive;
 
 use super::{
     fields::{
-        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
-        ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+        ExchangeTimestampField, ExchangeTypeField, MarketTypeField, MessageTypeField,
+        ReceivedTimestampField, FieldError, SymbolPairField, PriceDataField,
     },
-    hex::{HexDataError, NumToBytesExt},
+    serializer::{StructSerializer, FieldSerializer, serialize_block_builder, StructDeserializer, deserialize_block_builder},
 };
 
-/// Encode a [`BboMsg`] to bytes.
-pub fn encode_bbo(bbo: &BboMsg) -> BboResult<Vec<u8>> {
-    // This data should have 41 bytes.
-    let mut bytes = Vec::<u8>::with_capacity(41);
+pub struct BboStructure {
+    /// 交易所時間戳
+    pub exchange_timestamp: ExchangeTimestampField,
 
-    // 1. 交易所时间戳: 6 字节
-    bytes.extend_from_slice(&ExchangeTimestampRepr(bbo.timestamp).to_bytes());
+    /// 收到時間戳
+    pub received_timestamp: ReceivedTimestampField,
 
-    // 2. 收到时间戳: 6 字节
-    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
+    /// 交易所類型 (EXCHANGE)
+    pub exchange_type: ExchangeTypeField,
 
-    // 3. EXCHANGE: 1 字节
-    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&bbo.exchange)?.to_bytes());
+    /// 市場類型 (MARKET_TYPE)
+    pub market_type: MarketTypeField,
 
-    // 4. MARKET_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MarketTypeRepr(bbo.market_type).to_bytes());
+    /// 訊息類型 (MESSAGE_TYPE)
+    pub message_type: MessageTypeField,
 
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MessageTypeRepr(bbo.msg_type).to_bytes());
+    /// SYMBOL
+    pub symbol: SymbolPairField,
+    
+    /// 最優賣出報價資訊 (asks)
+    pub asks: PriceDataField,
 
-    // 6. SYMBOL: 2 字节信息标识
-    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&bbo.pair).to_bytes());
-
-    // 7. asks price(5)、quant(5)
-    bytes.extend_from_slice(&u32::encode_bytes(&bbo.ask_price.to_string())?);
-    bytes.extend_from_slice(&u32::encode_bytes(&bbo.ask_quantity_base.to_string())?);
-
-    // 8. bids price(5)、quant(5)
-    bytes.extend_from_slice(&u32::encode_bytes(&bbo.bid_price.to_string())?);
-    bytes.extend_from_slice(&u32::encode_bytes(&bbo.bid_quantity_base.to_string())?);
-
-    Ok(bytes)
+    /// 最優買入報價資訊 (bids)
+    pub bids: PriceDataField,
 }
 
-/// Decode the specified bytes to a [`BboMsg`].
-pub fn decode_bbo(payload: &[u8]) -> BboResult<BboMsg> {
-    let mut reader = BufReader::new(payload);
+impl StructSerializer for BboStructure {
+    type Err = BboError;
 
-    // 1. 交易所时间戳: 6 字节时间戳
-    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
+    fn serialize(&self, writer: &mut impl std::io::Write) -> Result<(), Self::Err> {
+        serialize_block_builder!(
+            self.exchange_timestamp,
+            self.received_timestamp,
+            self.exchange_type,
+            self.market_type,
+            self.message_type,
+            self.symbol,
+            self.asks,
+            self.bids => writer
+        );
 
-    // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
+        Ok(())
+    }
+}
 
-    // 3. EXCHANGE: 1 字节信息标识
-    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
+impl StructDeserializer for BboStructure {
+    type Err = BboError;
 
-    // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
+    fn deserialize(reader: &mut impl std::io::Read) -> Result<Self, Self::Err> {
+        deserialize_block_builder!(
+            reader =>
+            exchange_timestamp,
+            received_timestamp,
+            exchange_type,
+            market_type,
+            message_type,
+            symbol,
+            asks,
+            bids
+        )
+    }
+}
 
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
+impl TryFrom<&BboMsg> for BboStructure {
+    type Error = BboError;
 
-    // 6. SYMBOL_PAIR: 2 字节信息标识
-    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
+    fn try_from(value: &BboMsg) -> Result<Self, Self::Error> {
+        Ok(Self {
+            exchange_timestamp: ExchangeTimestampField(value.timestamp as u64),
+            received_timestamp: ReceivedTimestampField::new_from_now()?,
+            exchange_type: ExchangeTypeField::from_str(&value.exchange)?,
+            market_type: MarketTypeField(value.market_type),
+            message_type: MessageTypeField(value.msg_type),
+            symbol: SymbolPairField::from_pair(&value.pair),
+            asks: PriceDataField {
+                price: value.ask_price.to_string(),
+                quantity_base: value.ask_quantity_base.to_string(),
+            },
+            bids: PriceDataField {
+                price: value.bid_price.to_string(),
+                quantity_base: value.bid_quantity_base.to_string(),
+            },
+        })
+    }
+}
 
-    // 7. asks price(5)、quant(5)
-    let ask_price = {
-        let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| BboError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
+impl TryFrom<BboStructure> for BboMsg {
+    type Error = BboError;
 
-    let ask_quantity_base = {
-        let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| BboError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
+    fn try_from(value: BboStructure) -> Result<Self, Self::Error> {
+        let SymbolPairField(symbol, pair) = value.symbol;
 
-    // 8. bids price(5)、quant(5)
-    let bid_price = {
-        let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| BboError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
-
-    let bid_quantity_base = {
-        let raw_bytes = reader.read_exact_array()?;
-        u32::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| BboError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
-
-    Ok(BboMsg {
-        exchange: exchange_type.to_string(),
-        market_type,
-        msg_type,
-        pair: pair.to_string(),
-        symbol: symbol.to_string(),
-        timestamp: exchange_timestamp,
-        ask_price,
-        ask_quantity_base,
-        ask_quantity_quote: 0.0,
-        ask_quantity_contract: None,
-        bid_price,
-        bid_quantity_base,
-        bid_quantity_quote: 0.0,
-        bid_quantity_contract: None,
-        id: None,
-        json: String::new(),
-    })
+        Ok(Self {
+            exchange: value.exchange_type.0.to_string(),
+            market_type: value.market_type.0,
+            msg_type: value.message_type.0,
+            pair,
+            symbol: symbol.to_string(),
+            timestamp: value.exchange_timestamp.0 as i64,
+            ask_price: value.asks.price.parse()?,
+            ask_quantity_base: value.asks.quantity_base.parse()?,
+            ask_quantity_quote: 0.0,
+            ask_quantity_contract: None,
+            bid_price: value.bids.price.parse()?,
+            bid_quantity_base: value.bids.quantity_base.parse()?,
+            bid_quantity_quote: 0.0,
+            bid_quantity_contract: None,
+            id: None,
+            json: String::new(),
+        })
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum BboError {
-    #[error("data/hex error: {0}")]
-    HexDataError(#[from] HexDataError),
+    #[error("field error: {0}")]
+    FieldError(#[from] FieldError),
 
-    #[error("structure error: {0}")]
-    StructureError(#[from] StructureError),
+    #[error("parse float error: {0}")]
+    ParseFloatError(#[from] ParseFloatError),
+
+    #[error("I/O reader/writer error: {0}")]
+    IoError(#[from] std::io::Error),
 
     #[error("failed to convert the following bytes to f64: {0:?}")]
     DecimalConvertF64Failed(Vec<u8>),
@@ -138,13 +147,21 @@ mod tests {
     use crypto_market_type::MarketType;
     use crypto_message::BboMsg;
 
-    use super::{decode_bbo, encode_bbo};
+    use crate::data::serializer::{StructSerializer, StructDeserializer};
 
-    #[test]
-    fn test_bbo_encode_decode() {
-        let payload = BboMsg {
+    use super::BboStructure;
+
+    // FIXME: add Clone, PartialEq, Eq, Debug, Hash... to crypto-crawler-rs.
+    fn construct_bbomsg(unknown_market_type: bool) -> BboMsg {
+        BboMsg {
             exchange: "crypto".into(),
-            market_type: crypto_market_type::MarketType::Spot,
+            market_type: {
+                if unknown_market_type {
+                    crypto_market_type::MarketType::AmericanOption
+                } else {
+                    crypto_market_type::MarketType::Spot
+                }
+            },
             symbol: "1".into(),
             pair: "BTC/USDT".into(),
             msg_type: crypto_msg_type::MessageType::BBO,
@@ -159,63 +176,59 @@ mod tests {
             ask_quantity_quote: 0.0,
             ask_quantity_contract: None,
             id: Some(114514),
-        };
+        }
+    }
 
-        let encoded = encode_bbo(&payload).expect("encode failed");
-        let decoded = decode_bbo(&encoded).expect("decode failed");
+    #[test]
+    fn test_bbo_encode_decode() {
+        let payload = construct_bbomsg(false);
 
-        assert_eq!(payload.exchange, decoded.exchange);
-        assert_eq!(payload.market_type, decoded.market_type);
-        assert_eq!(payload.symbol, decoded.symbol);
-        assert_eq!(payload.pair, decoded.pair);
-        assert_eq!(payload.msg_type, decoded.msg_type);
-        assert_eq!(payload.timestamp, decoded.timestamp);
+        let bbo_structure = BboStructure::try_from(&payload).unwrap();
+        let mut buffer = Vec::new();
+
+        bbo_structure.serialize(&mut buffer).unwrap();
+        let decoded_structure = BboStructure::deserialize(&mut buffer.as_slice()).unwrap();
+        let decoded_msg = BboMsg::try_from(decoded_structure).unwrap();
+
+        assert_eq!(payload.exchange, decoded_msg.exchange);
+        assert_eq!(payload.market_type, decoded_msg.market_type);
+        assert_eq!(payload.symbol, decoded_msg.symbol);
+        assert_eq!(payload.pair, decoded_msg.pair);
+        assert_eq!(payload.msg_type, decoded_msg.msg_type);
+        assert_eq!(payload.timestamp, decoded_msg.timestamp);
         // assert_eq!(payload.json, decoded.json);
-        assert_eq!(payload.bid_price, decoded.bid_price);
-        assert_eq!(payload.bid_quantity_base, decoded.bid_quantity_base);
+        assert_eq!(payload.bid_price, decoded_msg.bid_price);
+        assert_eq!(payload.bid_quantity_base, decoded_msg.bid_quantity_base);
         // assert_eq!(payload.bid_quantity_quote, decoded.bid_quantity_quote);
-        assert_eq!(payload.ask_price, decoded.ask_price);
-        assert_eq!(payload.ask_quantity_base, decoded.ask_quantity_base);
+        assert_eq!(payload.ask_price, decoded_msg.ask_price);
+        assert_eq!(payload.ask_quantity_base, decoded_msg.ask_quantity_base);
         // assert_eq!(payload.ask_quantity_quote, decoded.ask_quantity_quote);
         // assert_eq!(payload.id, decoded.id);
     }
 
     #[test]
     fn test_bbo_encode_decode_unknown_markettype() {
-        let payload = BboMsg {
-            exchange: "crypto".into(),
-            market_type: crypto_market_type::MarketType::AmericanOption,
-            symbol: "1".into(),
-            pair: "BTC/USDT".into(),
-            msg_type: crypto_msg_type::MessageType::BBO,
-            timestamp: 12345678,
-            json: "".into(),
-            bid_price: 1.0,
-            bid_quantity_base: 2.0,
-            bid_quantity_quote: 3.0,
-            bid_quantity_contract: None,
-            ask_price: 4.0,
-            ask_quantity_base: 5.0,
-            ask_quantity_quote: 6.0,
-            ask_quantity_contract: None,
-            id: Some(114514),
-        };
+        let payload = construct_bbomsg(true);
 
-        let encoded = encode_bbo(&payload).expect("encode failed");
-        let decoded = decode_bbo(&encoded).expect("decode failed");
+        let bbo_structure = BboStructure::try_from(&payload).unwrap();
+        let mut buffer = Vec::new();
 
-        assert_eq!(payload.exchange, decoded.exchange);
-        assert_eq!(MarketType::Unknown, decoded.market_type);
-        assert_eq!(payload.symbol, decoded.symbol);
-        assert_eq!(payload.pair, decoded.pair);
-        assert_eq!(payload.msg_type, decoded.msg_type);
-        assert_eq!(payload.timestamp, decoded.timestamp);
+        bbo_structure.serialize(&mut buffer).unwrap();
+        let decoded_structure = BboStructure::deserialize(&mut buffer.as_slice()).unwrap();
+        let decoded_msg = BboMsg::try_from(decoded_structure).unwrap();
+
+        assert_eq!(payload.exchange, decoded_msg.exchange);
+        assert_eq!(MarketType::Unknown, decoded_msg.market_type);
+        assert_eq!(payload.symbol, decoded_msg.symbol);
+        assert_eq!(payload.pair, decoded_msg.pair);
+        assert_eq!(payload.msg_type, decoded_msg.msg_type);
+        assert_eq!(payload.timestamp, decoded_msg.timestamp);
         // assert_eq!(payload.json, decoded.json);
-        assert_eq!(payload.bid_price, decoded.bid_price);
-        assert_eq!(payload.bid_quantity_base, decoded.bid_quantity_base);
+        assert_eq!(payload.bid_price, decoded_msg.bid_price);
+        assert_eq!(payload.bid_quantity_base, decoded_msg.bid_quantity_base);
         // assert_eq!(payload.bid_quantity_quote, decoded.bid_quantity_quote);
-        assert_eq!(payload.ask_price, decoded.ask_price);
-        assert_eq!(payload.ask_quantity_base, decoded.ask_quantity_base);
+        assert_eq!(payload.ask_price, decoded_msg.ask_price);
+        assert_eq!(payload.ask_quantity_base, decoded_msg.ask_quantity_base);
         // assert_eq!(payload.ask_quantity_quote, decoded.ask_quantity_quote);
         // assert_eq!(payload.id, decoded.id);
     }
