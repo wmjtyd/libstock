@@ -30,7 +30,7 @@ use super::datadir::get_ident_path;
 ///
 /// assert_eq!(de, de_clone);
 /// ```
-#[derive(Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct DataEntry {
     /// The file name to write as.
     pub filename: String,
