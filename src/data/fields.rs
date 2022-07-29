@@ -11,7 +11,7 @@ use crypto_msg_type::MessageType;
 use either::Either;
 
 use super::{
-    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex},
+    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, NumToBytesExt, HexDataError},
     types::{
         bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
         bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
@@ -270,10 +270,57 @@ impl FieldDeserializer<1> for PeriodField {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PriceDataField {
+    /// 價格
+    ///
+    /// NOTE: crypto-crawler 是用浮點數儲存價格的。
+    /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
+    /// 因此是 Bug，遲早要改成 String。
+    pub price: String,
+
+    /// 基本量
+    ///
+    /// NOTE: crypto-crawler 是用浮點數儲存價格的。
+    /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
+    /// 因此是 Bug，遲早要改成 String。
+    pub quantity_base: String,
+}
+
+impl FieldSerializer<10> for PriceDataField {
+    type Err = FieldError;
+
+    fn serialize(&self) -> Result<[u8; 10], Self::Err> {
+        let mut bytes = [0; 10];
+
+        bytes[..5].copy_from_slice(&u32::encode_bytes(&self.price)?);
+        bytes[5..].copy_from_slice(&u32::encode_bytes(&self.quantity_base)?);
+
+        Ok(bytes)
+    }
+}
+
+impl FieldDeserializer<10> for PriceDataField {
+    type Err = FieldError;
+
+    fn deserialize(src: &[u8; 10]) -> Result<Self, Self::Err> {
+        let price = arrayref::array_ref![src, 0, 5];
+        let quantity_base = arrayref::array_ref![src, 5, 5];
+
+        Ok(Self {
+            price: u32::decode_bytes(price).to_string(),
+            quantity_base: u32::decode_bytes(quantity_base).to_string(),
+        })
+    }
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum FieldError {
     #[error("data/types error: {0}")]
     DataTypesError(#[from] DataTypesError),
+
+    #[error("hex encode/decode error: {0}")]
+    HexDataError(#[from] HexDataError),
 
     #[error("failed to read {1} bytes from reader")]
     ReadFromReaderFailed(std::io::Error, usize),
@@ -289,6 +336,9 @@ pub enum FieldError {
 
     #[error("this period has not been implemented: {0:?}")]
     UnimplementedPeriod(Either<String, u8>),
+
+    #[error("failed to convert the following bytes to f64: {0:?}")]
+    DecimalConvertF64Failed(Vec<u8>),
 }
 
 pub type FieldResult<T> = Result<T, FieldError>;
