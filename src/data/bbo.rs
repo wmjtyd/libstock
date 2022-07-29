@@ -145,9 +145,6 @@ pub enum BboError {
 
     #[error("I/O reader/writer error: {0}")]
     IoError(#[from] std::io::Error),
-
-    #[error("failed to convert the following bytes to f64: {0:?}")]
-    DecimalConvertF64Failed(Vec<u8>),
 }
 
 pub type BboResult<T> = Result<T, BboError>;
