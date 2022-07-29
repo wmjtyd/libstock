@@ -4,6 +4,7 @@
 //! see the module [`hex`].
 
 pub mod hex;
+pub mod serializer;
 
 #[cfg(feature = "crypto")]
 pub mod orderbook;

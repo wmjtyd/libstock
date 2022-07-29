@@ -46,7 +46,7 @@ where
 {
     type Err;
 
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Self::Err>;
+    fn serialize(&self, writer: &mut impl Write) -> Result<(), Self::Err>;
 }
 
 trait StructDeserializer
@@ -55,7 +55,7 @@ where
 {
     type Err;
 
-    fn deserialize<R: Read>(reader: &mut R) -> Result<Self, Self::Err>;
+    fn deserialize(reader: &mut impl Read) -> Result<Self, Self::Err>;
 }
 
 struct Test {
@@ -97,7 +97,7 @@ where
 {
     type Err = anyhow::Error;
 
-    fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), Self::Err> {
+    fn serialize(&self, writer: &mut impl Write) -> Result<(), Self::Err> {
         self.field1.serialize_to_writer(writer)??;
         self.field2.serialize_to_writer(writer)??;
 
@@ -111,7 +111,7 @@ where
 {
     type Err = anyhow::Error;
 
-    fn deserialize<R: Read>(src: &mut R) -> Result<Self, Self::Err> {
+    fn deserialize(src: &mut impl Read) -> Result<Self, Self::Err> {
         Ok(Self {
             field1: BoolRepr::deserialize_from_reader(src)??,
             field2: BoolRepr::deserialize_from_reader(src)??,
