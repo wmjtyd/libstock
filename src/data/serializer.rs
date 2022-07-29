@@ -1,17 +1,17 @@
 //! The robust and high-performance serializer and deserializer trait.
-//! 
+//!
 //! This trait is aimed to provide a simple way to serialize and deserialize
 //! wmjtyd's binary data structures, without worrying about the length and
 //! some details.
-//! 
+//!
 //! For example, see `examples/concept_struct.rs` and our implementations.
 
-use std::io::{Write, self, Read};
+use std::io::{self, Read, Write};
 
 /// The serializer for fields.
 pub trait FieldSerializer<const LEN: usize>
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -20,7 +20,7 @@ where
 
     /// Serialize the input and write the whole serialized
     /// content to the writer.
-    /// 
+    ///
     /// Note that we wrapped the response from `serialize()`
     /// with a `io::Result`, to respect any possible Err.
     fn serialize_to_writer(&self, writer: &mut impl Write) -> Result<io::Result<()>, Self::Err> {
@@ -33,15 +33,15 @@ where
 /// The deserializer for fields.
 pub trait FieldDeserializer<const LEN: usize>
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
     /// Desrialize the given data to this type.
     fn deserialize(src: &[u8; LEN]) -> Result<Self, Self::Err>;
-    
+
     /// Read from the writer, and deserialize it.
-    /// 
+    ///
     /// Note that we wrapped the response from `deserialize()`
     /// with a `io::Result`, to respect any possible Err.
     fn deserialize_from_reader(reader: &mut impl Read) -> io::Result<Result<Self, Self::Err>> {
@@ -55,7 +55,7 @@ where
 /// The serializer for structures.
 pub trait StructSerializer
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -65,7 +65,7 @@ where
 /// The deserializer for structures.
 pub trait StructDeserializer
 where
-    Self: Sized
+    Self: Sized,
 {
     type Err;
 
@@ -90,5 +90,5 @@ macro_rules! deserialize_block_builder {
     }}
 }
 
-pub(crate) use serialize_block_builder;
 pub(crate) use deserialize_block_builder;
+pub(crate) use serialize_block_builder;
