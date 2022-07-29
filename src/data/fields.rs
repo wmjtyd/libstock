@@ -1,4 +1,4 @@
-//! The prefered encoded data structures of `libstock`.
+//! The field (de)serialization module for libstock.
 
 use std::{
     str::FromStr,
@@ -11,12 +11,13 @@ use crypto_msg_type::MessageType;
 use either::Either;
 
 use super::{
-    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, NumToBytesExt, HexDataError},
+    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, HexDataError, NumToBytesExt},
+    serializer::{FieldDeserializer, FieldSerializer},
     types::{
         bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
         bit_serialize_trade_side, DataTypesError, Exchange, InfoType, MARKET_TYPE_BIT, PERIOD,
         SYMBOL_PAIR,
-    }, serializer::{FieldSerializer, FieldDeserializer},
+    },
 };
 
 /// The timestamp of exchange (6 byte).
@@ -76,7 +77,7 @@ impl FieldDeserializer<6> for ReceivedTimestampField {
 pub struct ExchangeTypeField(pub Exchange);
 
 impl ExchangeTypeField {
-    pub fn from_str(str: &str) -> FieldResult<Self> {
+    pub fn try_from_str(str: &str) -> FieldResult<Self> {
         let exchange = Exchange::from_str(str)
             .map_err(|_| FieldError::UnimplementedExchange(Either::Left(str.to_string())))?;
         Ok(Self(exchange))
@@ -201,8 +202,10 @@ impl FieldDeserializer<2> for SymbolPairField {
 
     fn deserialize(src: &[u8; 2]) -> Result<Self, Self::Err> {
         let symbol: Symbol = u16::from_be_bytes(*src);
-        let pair: Pair =
-            SYMBOL_PAIR.get_by_left(&symbol).unwrap_or(&"UNKNOWN").to_string();
+        let pair: Pair = SYMBOL_PAIR
+            .get_by_left(&symbol)
+            .unwrap_or(&"UNKNOWN")
+            .to_string();
 
         Ok(Self(symbol, pair))
     }
@@ -213,7 +216,7 @@ impl FieldDeserializer<2> for SymbolPairField {
 pub struct InfoTypeField(pub InfoType);
 
 impl InfoTypeField {
-    pub fn from_str(str: &str) -> FieldResult<Self> {
+    pub fn try_from_str(str: &str) -> FieldResult<Self> {
         let exchange = InfoType::from_str(str)
             .map_err(|_| FieldError::UnimplementedInfoType(Either::Left(str.to_string())))?;
         Ok(Self(exchange))
@@ -347,37 +350,32 @@ pub type FieldResult<T> = Result<T, FieldError>;
 mod tests {
     use crate::data::{
         fields::InfoTypeField,
-        types::{Exchange, InfoType}, serializer::FieldDeserializer,
+        serializer::FieldDeserializer,
+        types::{Exchange, InfoType},
     };
 
     use super::ExchangeTypeField;
 
     #[test]
-    fn test_exchange_expr_from_str() {
+    fn test_exchange_expr_try_from_str() {
         assert_eq!(
-            ExchangeTypeField::from_str("crypto").unwrap().0,
+            ExchangeTypeField::try_from_str("crypto").unwrap().0,
             Exchange::Crypto
         );
+        assert_eq!(ExchangeTypeField::try_from_str("ftx").unwrap().0, Exchange::Ftx);
         assert_eq!(
-            ExchangeTypeField::from_str("ftx").unwrap().0,
-            Exchange::Ftx
-        );
-        assert_eq!(
-            ExchangeTypeField::from_str("binance").unwrap().0,
+            ExchangeTypeField::try_from_str("binance").unwrap().0,
             Exchange::Binance
         );
         assert_eq!(
-            ExchangeTypeField::from_str("huobi").unwrap().0,
+            ExchangeTypeField::try_from_str("huobi").unwrap().0,
             Exchange::Huobi
         );
         assert_eq!(
-            ExchangeTypeField::from_str("kucoin").unwrap().0,
+            ExchangeTypeField::try_from_str("kucoin").unwrap().0,
             Exchange::Kucoin
         );
-        assert_eq!(
-            ExchangeTypeField::from_str("okx").unwrap().0,
-            Exchange::Okx
-        );
+        assert_eq!(ExchangeTypeField::try_from_str("okx").unwrap().0, Exchange::Okx);
     }
 
     #[test]
@@ -409,26 +407,14 @@ mod tests {
     }
 
     #[test]
-    fn test_info_type_from_str() {
-        assert_eq!(
-            InfoTypeField::from_str("asks").unwrap().0,
-            InfoType::Asks
-        );
-        assert_eq!(
-            InfoTypeField::from_str("bids").unwrap().0,
-            InfoType::Bids
-        );
+    fn test_info_type_try_from_str() {
+        assert_eq!(InfoTypeField::try_from_str("asks").unwrap().0, InfoType::Asks);
+        assert_eq!(InfoTypeField::try_from_str("bids").unwrap().0, InfoType::Bids);
     }
 
     #[test]
     fn test_info_expr_from_byte() {
-        assert_eq!(
-            InfoTypeField::deserialize(&[1]).unwrap().0,
-            InfoType::Asks
-        );
-        assert_eq!(
-            InfoTypeField::deserialize(&[2]).unwrap().0,
-            InfoType::Bids
-        );
+        assert_eq!(InfoTypeField::deserialize(&[1]).unwrap().0, InfoType::Asks);
+        assert_eq!(InfoTypeField::deserialize(&[2]).unwrap().0, InfoType::Bids);
     }
 }
