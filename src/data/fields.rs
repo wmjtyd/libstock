@@ -20,31 +20,11 @@ use super::{
     },
 };
 
-/// The timestamp of exchange (6 bytes).
+/// The general timestamp field (6 bytes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ExchangeTimestampField(pub u64);
+pub struct TimestampField(pub u64);
 
-impl FieldSerializer<6> for ExchangeTimestampField {
-    type Err = FieldError;
-
-    fn serialize(&self) -> Result<[u8; 6], Self::Err> {
-        Ok(unix_ms_to_six_byte_hex(self.0))
-    }
-}
-
-impl FieldDeserializer<6> for ExchangeTimestampField {
-    type Err = FieldError;
-
-    fn deserialize(src: &[u8; 6]) -> Result<Self, Self::Err> {
-        Ok(Self(six_byte_hex_to_unix_ms(src)))
-    }
-}
-
-/// The timestamp when a message such as order and trade received (6 bytes).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ReceivedTimestampField(pub u64);
-
-impl ReceivedTimestampField {
+impl TimestampField {
     /// Create a new `ReceivedTimestamp` from the current time.
     pub fn new_from_now() -> FieldResult<Self> {
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
@@ -56,13 +36,13 @@ impl ReceivedTimestampField {
     }
 }
 
-impl Default for ReceivedTimestampField {
+impl Default for TimestampField {
     fn default() -> Self {
         Self::new_from_now().expect("failed to get the system time")
     }
 }
 
-impl FieldSerializer<6> for ReceivedTimestampField {
+impl FieldSerializer<6> for TimestampField {
     type Err = FieldError;
 
     fn serialize(&self) -> Result<[u8; 6], Self::Err> {
@@ -70,7 +50,7 @@ impl FieldSerializer<6> for ReceivedTimestampField {
     }
 }
 
-impl FieldDeserializer<6> for ReceivedTimestampField {
+impl FieldDeserializer<6> for TimestampField {
     type Err = FieldError;
 
     fn deserialize(src: &[u8; 6]) -> Result<Self, Self::Err> {
@@ -324,7 +304,7 @@ impl FieldDeserializer<10> for PriceDataField {
     }
 }
 
-/// The flag indicated the end of data. (1 byte).
+/// The flag indicating the end of data. (1 byte).
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct EndOfDataFlag;
 

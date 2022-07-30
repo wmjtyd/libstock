@@ -14,8 +14,8 @@ use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        EndOfDataFlag, ExchangeTimestampField, ExchangeTypeField, FieldError, MarketTypeField,
-        MessageTypeField, PriceDataField, ReceivedTimestampField, SymbolPairField,
+        EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+        PriceDataField, SymbolPairField, TimestampField,
     },
     serializer::{
         deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
@@ -30,11 +30,11 @@ use super::{
 #[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
 pub struct BboStructure {
     /// 交易所時間戳
-    pub exchange_timestamp: ExchangeTimestampField,
+    pub exchange_timestamp: TimestampField,
 
     /// 收到時間戳
     #[builder(default)]
-    pub received_timestamp: ReceivedTimestampField,
+    pub received_timestamp: TimestampField,
 
     /// 交易所類型 (EXCHANGE)
     pub exchange_type: ExchangeTypeField,
@@ -103,7 +103,7 @@ impl TryFrom<&BboMsg> for BboStructure {
 
     fn try_from(value: &BboMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
-            .exchange_timestamp(ExchangeTimestampField(value.timestamp as u64))
+            .exchange_timestamp(TimestampField(value.timestamp as u64))
             .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
             .market_type(MarketTypeField(value.market_type))
             .message_type(MessageTypeField(value.msg_type))
