@@ -1,10 +1,8 @@
 //! The order-related operations.
-//!
-//! Note: we just copy it from `crypto-market`, and we may not test it well.
 
 use crypto_message::Order;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum OrderType {
     Ask,
     Bid,
