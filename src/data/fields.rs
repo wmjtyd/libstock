@@ -5,13 +5,14 @@ use std::{
     time::{SystemTime, SystemTimeError},
 };
 
-use crypto_market_type::MarketType;
-use crypto_message::TradeSide;
-use crypto_msg_type::MessageType;
-use either::Either;
+pub use crypto_market_type::MarketType;
+pub use crypto_message::TradeSide;
+pub use crypto_msg_type::MessageType;
+pub use either::Either;
+pub use rust_decimal::Decimal;
 
 use super::{
-    hex::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, HexDataError, NumToBytesExt},
+    num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, NumError, Encoder, Decoder},
     serializer::{FieldDeserializer, FieldSerializer},
     types::{
         bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
@@ -259,6 +260,42 @@ impl FieldDeserializer<1> for PeriodField {
     }
 }
 
+/// The field to store numbers serialized with [`super::hex::NumToBytesExt`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DecimalField<const LEN: usize>(pub Decimal);
+
+impl FieldSerializer<5> for DecimalField<5> {
+    type Err = FieldError;
+
+    fn serialize(&self) -> Result<[u8; 5], Self::Err> {
+        Ok(self.0.encode()?)
+    }
+}
+
+impl FieldSerializer<10> for DecimalField<10> {
+    type Err = FieldError;
+
+    fn serialize(&self) -> Result<[u8; 10], Self::Err> {
+        Ok(self.0.encode()?)
+    }
+}
+
+impl FieldDeserializer<5> for DecimalField<5> {
+    type Err = FieldError;
+
+    fn deserialize(src: &[u8; 5]) -> Result<Self, Self::Err> {
+        Ok(Self(Decimal::decode(src)?))
+    }
+}
+
+impl FieldDeserializer<10> for DecimalField<10> {
+    type Err = FieldError;
+
+    fn deserialize(src: &[u8; 10]) -> Result<Self, Self::Err> {
+        Ok(Self(Decimal::decode(src)?))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// The price data (10 bytes).
 pub struct PriceDataField {
@@ -267,14 +304,14 @@ pub struct PriceDataField {
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
-    pub price: String,
+    pub price: DecimalField<5>,
 
     /// 基本量 (5 bytes)
     ///
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
-    pub quantity_base: String,
+    pub quantity_base: DecimalField<5>,
 }
 
 impl FieldSerializer<10> for PriceDataField {
@@ -283,8 +320,8 @@ impl FieldSerializer<10> for PriceDataField {
     fn serialize(&self) -> Result<[u8; 10], Self::Err> {
         let mut bytes = [0; 10];
 
-        bytes[..5].copy_from_slice(&u32::encode_bytes(&self.price)?);
-        bytes[5..].copy_from_slice(&u32::encode_bytes(&self.quantity_base)?);
+        bytes[..5].copy_from_slice(&self.price.serialize()?);
+        bytes[5..].copy_from_slice(&self.quantity_base.serialize()?);
 
         Ok(bytes)
     }
@@ -298,8 +335,8 @@ impl FieldDeserializer<10> for PriceDataField {
         let quantity_base = arrayref::array_ref![src, 5, 5];
 
         Ok(Self {
-            price: u32::decode_bytes(price).to_string(),
-            quantity_base: u32::decode_bytes(quantity_base).to_string(),
+            price: DecimalField::deserialize(price)?,
+            quantity_base: DecimalField::deserialize(quantity_base)?,
         })
     }
 }
@@ -334,7 +371,7 @@ pub enum FieldError {
     DataTypesError(#[from] DataTypesError),
 
     #[error("hex encode/decode error: {0}")]
-    HexDataError(#[from] HexDataError),
+    NumError(#[from] NumError),
 
     #[error("failed to read {1} bytes from reader")]
     ReadFromReaderFailed(std::io::Error, usize),
