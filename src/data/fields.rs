@@ -14,7 +14,7 @@ pub use rust_decimal::Error as DecimalError;
 use typed_builder::TypedBuilder;
 
 use super::{
-    num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, NumError, Encoder, Decoder},
+    num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, Decoder, Encoder, NumError},
     serializer::{FieldDeserializer, FieldSerializer},
     types::{
         bit_deserialize_message_type, bit_deserialize_trade_side, bit_serialize_message_type,
@@ -303,7 +303,6 @@ impl<const LEN: usize> From<Decimal> for DecimalField<LEN> {
         Self(d)
     }
 }
-
 
 impl<const LEN: usize> From<f32> for DecimalField<LEN> {
     fn from(f: f32) -> Self {

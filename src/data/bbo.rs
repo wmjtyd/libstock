@@ -7,8 +7,6 @@
 //! You can still implement your own format by implementing the [`TryFrom`]
 //! between your structure and [`BboStructure`].
 
-use std::num::ParseFloatError;
-
 use crypto_message::BboMsg;
 use rust_decimal::prelude::ToPrimitive;
 use typed_builder::TypedBuilder;
@@ -113,13 +111,13 @@ impl TryFrom<&BboMsg> for BboStructure {
                 PriceDataField::builder()
                     .price(value.ask_price)
                     .quantity_base(value.ask_quantity_base)
-                    .build()
+                    .build(),
             )
             .bids(
                 PriceDataField::builder()
                     .price(value.bid_price)
                     .quantity_base(value.bid_quantity_base)
-                    .build()
+                    .build(),
             )
             .build())
     }
@@ -157,14 +155,8 @@ pub enum BboError {
     #[error("field error: {0}")]
     FieldError(#[from] FieldError),
 
-    #[error("parse float error: {0}")]
-    ParseFloatError(#[from] ParseFloatError),
-
     #[error("I/O reader/writer error: {0}")]
     IoError(#[from] std::io::Error),
-
-    #[error("The data is ended too early.")]
-    NoEndCharacter,
 }
 
 pub type BboResult<T> = Result<T, BboError>;

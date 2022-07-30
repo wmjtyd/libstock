@@ -1,120 +1,159 @@
 //! The funding rate related operations.
 
-use std::io::BufReader;
-
 use crypto_message::FundingRateMsg;
 use rust_decimal::prelude::ToPrimitive;
+use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, ReadExt,
-        ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+        DecimalField, EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField,
+        MessageTypeField, SymbolPairField, TimestampField,
     },
-    hex::{HexDataError, NumToBytesExt},
+    serializer::{
+        deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
+        StructSerializer,
+    },
 };
 
-/// Encode a [`FundingRateMsg`] to bytes.
-pub fn encode_funding_rate(funding_rate: &FundingRateMsg) -> FundingRateResult<Vec<u8>> {
-    // This data should have 32 bytes.
-    let mut bytes = Vec::<u8>::with_capacity(32);
+pub type FundingRateField = DecimalField<10>;
 
-    // 1. 交易所时间戳: 6 字节
-    bytes.extend_from_slice(&ExchangeTimestampRepr(funding_rate.timestamp).to_bytes());
+pub type EstimatedRateField = DecimalField<10>;
 
-    // 2. 收到时间戳: 6 字节
-    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
+/// The structure of a funding rate.
+///
+/// You can take advantage of `builder()`
+/// to construct some fields automatically.
+#[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
+pub struct FundingRateStructure {
+    /// 交易所時間戳
+    pub exchange_timestamp: TimestampField,
 
-    // 3. EXCHANGE: 1 字节
-    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&funding_rate.exchange)?.to_bytes());
+    /// 收到時間戳
+    #[builder(default)]
+    pub received_timestamp: TimestampField,
 
-    // 4. MARKET_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MarketTypeRepr(funding_rate.market_type).to_bytes());
+    /// 交易所類型 (EXCHANGE)
+    pub exchange_type: ExchangeTypeField,
 
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MessageTypeRepr(funding_rate.msg_type).to_bytes());
+    /// 市場類型 (MARKET_TYPE)
+    pub market_type: MarketTypeField,
 
-    // 6. SYMBOL: 2 字节信息标识
-    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&funding_rate.pair).to_bytes());
+    /// 訊息類型 (MESSAGE_TYPE)
+    pub message_type: MessageTypeField,
 
-    // 7. funding_rate: 10 bytes
-    bytes.extend_from_slice(&u64::encode_bytes(&funding_rate.funding_rate.to_string())?);
+    /// SYMBOL
+    pub symbol: SymbolPairField,
 
-    // 8. funding_time: 6 bytes
-    bytes.extend_from_slice(&ExchangeTimestampRepr(funding_rate.funding_time).to_bytes());
+    /// Funding rate
+    pub funding_rate: FundingRateField,
 
-    // 9. estimated_rate: 10 bytes
-    bytes.extend_from_slice(&u64::encode_bytes(
-        &funding_rate.estimated_rate.unwrap().to_string(),
-    )?);
+    /// Funding time
+    pub funding_time: TimestampField,
 
-    Ok(bytes)
+    /// Estimated rate
+    pub estimated_rate: EstimatedRateField,
+
+    /// 資料結尾
+    #[builder(default)]
+    pub end: EndOfDataFlag,
 }
 
-/// Decode the specified bytes to a [`FundingRateMsg`].
-pub fn decode_funding_rate(payload: &[u8]) -> FundingRateResult<FundingRateMsg> {
-    let mut reader = BufReader::new(payload);
+impl StructSerializer for FundingRateStructure {
+    type Err = FundingRateError;
 
-    // 1. 交易所时间戳: 6 字节时间戳
-    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
+    fn serialize(&self, writer: &mut impl std::io::Write) -> Result<(), Self::Err> {
+        serialize_block_builder!(
+            self.exchange_timestamp,
+            self.received_timestamp,
+            self.exchange_type,
+            self.market_type,
+            self.message_type,
+            self.symbol,
+            self.funding_rate,
+            self.funding_time,
+            self.estimated_rate,
+            self.end
+            => writer
+        );
 
-    // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
+        Ok(())
+    }
+}
 
-    // 3. EXCHANGE: 1 字节信息标识
-    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
+impl StructDeserializer for FundingRateStructure {
+    type Err = FundingRateError;
 
-    // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
+    fn deserialize(reader: &mut impl std::io::Read) -> Result<Self, Self::Err> {
+        deserialize_block_builder!(
+            reader =>
+            exchange_timestamp,
+            received_timestamp,
+            exchange_type,
+            market_type,
+            message_type,
+            symbol,
+            funding_rate,
+            funding_time,
+            estimated_rate,
+            end
+        )
+    }
+}
 
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
+impl TryFrom<&FundingRateMsg> for FundingRateStructure {
+    type Error = FundingRateError;
 
-    // 6. SYMBOL_PAIR: 2 字节信息标识
-    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
+    fn try_from(msg: &FundingRateMsg) -> Result<Self, Self::Error> {
+        Ok(Self::builder()
+            .exchange_timestamp(TimestampField(msg.timestamp as u64))
+            .exchange_type(ExchangeTypeField::try_from_str(&msg.exchange)?)
+            .market_type(MarketTypeField(msg.market_type))
+            .message_type(MessageTypeField(msg.msg_type))
+            .symbol(SymbolPairField::from_pair(&msg.pair))
+            .funding_rate(FundingRateField::from(msg.funding_rate))
+            .funding_time(TimestampField(msg.funding_time as u64))
+            .estimated_rate(EstimatedRateField::from(
+                msg.estimated_rate
+                    .ok_or(FundingRateError::MissingEstimatedRate)?,
+            ))
+            .build())
+    }
+}
 
-    // 7. funding_rate: 10 bytes
-    let funding_rate = {
-        let raw_bytes = reader.read_exact_array()?;
-        u64::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
+impl TryFrom<FundingRateStructure> for FundingRateMsg {
+    type Error = FundingRateError;
 
-    // 8. funding_time: 6 bytes
-    let funding_time = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
+    fn try_from(s: FundingRateStructure) -> Result<Self, Self::Error> {
+        let SymbolPairField(symbol, pair) = s.symbol;
 
-    // 9. estimated_rate: 10 bytes
-    let estimated_rate = {
-        let raw_bytes = reader.read_exact_array()?;
-        u64::decode_bytes(&raw_bytes)
-            .to_f64()
-            .ok_or_else(|| FundingRateError::DecimalConvertF64Failed(raw_bytes.to_vec()))?
-    };
-
-    Ok(FundingRateMsg {
-        exchange: exchange_type.to_string(),
-        market_type,
-        msg_type,
-        pair: pair.to_string(),
-        symbol: symbol.to_string(),
-        timestamp: exchange_timestamp,
-        funding_rate,
-        funding_time,
-        estimated_rate: Some(estimated_rate),
-        json: String::new(),
-    })
+        Ok(Self {
+            exchange: s.exchange_type.0.to_string(),
+            market_type: s.market_type.0,
+            symbol: symbol.to_string(),
+            pair,
+            msg_type: s.message_type.0,
+            timestamp: s.exchange_timestamp.0 as i64,
+            funding_rate: s.funding_rate.0.to_f64().expect("overflow?"),
+            funding_time: s.funding_time.0 as i64,
+            estimated_rate: s.estimated_rate.0.to_f64(),
+            json: String::new(),
+        })
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum FundingRateError {
-    #[error("data/hex error: {0}")]
-    HexDataError(#[from] HexDataError),
+    #[error("field error: {0}")]
+    FieldError(#[from] FieldError),
 
-    #[error("structure error: {0}")]
-    StructureError(#[from] StructureError),
+    #[error("estimated_rate in FundingRateMsg is None")]
+    MissingEstimatedRate,
 
-    #[error("failed to convert the following bytes to f64: {0:?}")]
-    DecimalConvertF64Failed(Vec<u8>),
+    #[error("I/O reader/writer error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("The data is ended too early.")]
+    NoEndCharacter,
 }
 
 pub type FundingRateResult<T> = Result<T, FundingRateError>;
