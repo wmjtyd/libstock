@@ -124,7 +124,7 @@ impl TryFrom<FundingRateStructure> for FundingRateMsg {
     type Error = FundingRateError;
 
     fn try_from(s: FundingRateStructure) -> Result<Self, Self::Error> {
-        let SymbolPairField(symbol, pair) = s.symbol;
+        let SymbolPairField { symbol, pair } = s.symbol;
 
         Ok(Self {
             exchange: s.exchange_type.0.to_string(),

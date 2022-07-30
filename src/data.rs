@@ -10,9 +10,6 @@ pub mod serializer;
 // pub mod orderbook;
 
 #[cfg(feature = "crypto")]
-pub mod types;
-
-#[cfg(feature = "crypto")]
 pub mod fields;
 
 #[cfg(feature = "crypto")]

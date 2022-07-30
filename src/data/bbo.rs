@@ -127,7 +127,7 @@ impl TryFrom<BboStructure> for BboMsg {
     type Error = BboError;
 
     fn try_from(value: BboStructure) -> Result<Self, Self::Error> {
-        let SymbolPairField(symbol, pair) = value.symbol;
+        let SymbolPairField { symbol, pair } = value.symbol;
 
         Ok(Self {
             exchange: value.exchange_type.0.to_string(),
