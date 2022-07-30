@@ -1,8 +1,49 @@
 # libstock's changelog
 
-## Unreleased: 0.3.0
+## UNRELEASED: 0.4.0
 
-### Unreleased: 0.3.0 – Breaking changes
+### 0.4.0 – Breaking Changes
+
+- Methods under `data` module are mostly reshaped. You may need to
+  rewrite your code to adapt this new architecture.
+  - We have abstracted a `Structure` – To serialize your
+    `BboMsg`, do `.try_into()` first.
+- Added a End-Of-Data flag (`\0`) to all the current structure.
+
+### 0.4.0 – Features
+
+- Rewrite `data` module for robust and performance.
+- Implement `Eq` for `file/writer`.
+- Implement a general serializer and deserializer for field and structure.
+  - `StructSerializer`: We now accept any type implemented `std::io::Write`,
+     instead of `BufWriter` only!
+  - `StructDeserializer`: We now accept any type implemented `std::io::Read`,
+     instead of `BufReader` only!
+- Add the ability to convert other structures other than what
+  `crypto-crawler` provides! 🎉
+  - Just implement the `TryFrom` between your structure and our structure.
+  - Our incoming C binding adds the ability to operate with `libstock`'s
+    serialization and deserialization feature in C/C++.
+  - Our work-in-progress Java binding also adds such the ability
+    like C/C++'s.
+- Derive more useful traits for our structures, such as `Debug`, `PartialEq`,
+  `Eq`, `Hash`, `Clone`.
+  - Also our fields ;)
+
+### 0.4.0 – Chores
+
+- Update dependencies.
+  - WIP: merge crypto-crawler changes to upstream
+
+### 0.4.0 – CI
+
+- Automatically abort the old CI tasks by
+  setting the `concurrent` flag.
+- Set `rust-toolchain.toml` to beta toolchain.
+
+## 0.3.0
+
+### 0.3.0 – Breaking changes
 
 - `file/reader`: `open()` returns `Result` instead of `Option` now.
   - For better backtrace
@@ -13,7 +54,7 @@
 - Updated the fields of `data`.
 - `file/datadir`: need to pass a timestamp
 
-### Unreleased: 0.3.0 – Features
+### 0.3.0 – Features
 
 - `slack`: For sending notifications to Slack with Slack Hook.
 - `message`: A basic encap of `nanomsg` and `zeromq` for subscribing and publishing.
@@ -24,7 +65,7 @@
   - WIP: currently dirty but works.
 - `message/zeromq`: migrate to the ZeroMQ implemented in Rust.
 
-### Unreleased: 0.3.0 – Bug fixes
+### 0.3.0 – Bug fixes
 
 - `file/reader`: Make `read()` returns the exact data
   - Currently, it always returns `[]` due to an implementation mistake.
@@ -32,24 +73,24 @@
 - (beta 2) `message`: use `connect` instead of `bind` for Sub
 - `data/*/decode`: `ReceivedTimestampRepr` should be 6 bytes instead of 8 bytes.
 
-### Unreleased: 0.3.0 – Refactoring
+### 0.3.0 – Refactoring
 
 - Upgrade `crypto-crawler-rs` to `92aee0d37e228e53dd994a17058a7f819e005446`
   - Clean up the unnecessary dependencies.
 - Deprecated `file/ident`.
 
-### Unreleased: 0.3.0 – Tests
+### 0.3.0 – Tests
 
 <!-- <!> has been disabled by default. -->
 <!-- - `file`: Add integration test for writer & reader -->
 - Add encode/decode tests to `data/bbo`
   - _WIP:_ add other encode/decode tests to `data/*`!
 
-### Unreleased: 0.3.0 – Chores
+### 0.3.0 – Chores
 
 - `file/reader`: add `info` logger on new() for better debugging
 
-### Unreleased: 0.3.0 – CI
+### 0.3.0 – CI
 
 - Install `nanomsg` for `message` test.
 - Introduce `cargo nextest` for faster build.
