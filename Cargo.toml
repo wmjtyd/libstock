@@ -34,6 +34,9 @@ zeromq = { version = "0.3.3", optional = true }
 async-trait = "0.1.56"
 typed-builder = "0.10.0"
 
+[dev_dependencies]
+rust_decimal_macros = "1.25.0"
+
 [dependencies.crypto-message]
 version = "=1.0.2"
 optional = true
