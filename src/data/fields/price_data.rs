@@ -1,3 +1,8 @@
+//! The module with a field to specify the price data,
+//! which includes the price and quantity base.
+//!
+//! For more information, see [`PriceDataField`].
+
 use typed_builder::TypedBuilder;
 
 use super::{DecimalField, FieldDeserializer, FieldError, FieldSerializer};

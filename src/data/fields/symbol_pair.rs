@@ -1,3 +1,6 @@
+//! The module with a field to specify the symbol of a message.
+//! See [`SymbolPairField`].
+
 use typed_builder::TypedBuilder;
 
 use super::{bimap::create_bimap, FieldDeserializer, FieldError, FieldSerializer};

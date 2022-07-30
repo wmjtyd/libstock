@@ -1,4 +1,7 @@
-use crypto_market_type::MarketType;
+//! The module with a field to specify the market type of a message.
+//! See [`MarketTypeField`].
+
+pub use crypto_market_type::MarketType;
 
 use super::{bimap::create_bimap, FieldDeserializer, FieldError, FieldSerializer};
 

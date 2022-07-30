@@ -1,4 +1,5 @@
-//! End of Data.
+//! The module with a field to specify the flag indicating the end of data.
+//! See [`EndOfDataFlag`].
 
 use super::{FieldDeserializer, FieldError, FieldSerializer};
 

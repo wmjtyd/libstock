@@ -1,3 +1,6 @@
+//! The module with a field to specify the [`TradeSide`] of a message.
+//! See [`TradeSideField`].
+
 pub use crypto_message::TradeSide;
 
 use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};

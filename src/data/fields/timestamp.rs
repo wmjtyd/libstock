@@ -1,3 +1,6 @@
+//! The module with a field for storing the timestamp of a message.
+//! See [`TimestampField`].
+
 use std::time::SystemTime;
 
 use crate::data::num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex};

@@ -1,3 +1,6 @@
+//! The module with a field to specify the [`InfoType`] of a message.
+//! See [`InfoTypeField`].
+
 use std::str::FromStr;
 
 use strum::{EnumString, FromRepr};

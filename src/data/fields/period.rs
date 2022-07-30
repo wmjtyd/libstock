@@ -1,3 +1,6 @@
+//! The module with a field to specify the period of a message.
+//! See [`PeriodField`].
+
 use super::{bimap::create_bimap, Either, FieldDeserializer, FieldError, FieldSerializer};
 
 /// The period of a message (1 byte).

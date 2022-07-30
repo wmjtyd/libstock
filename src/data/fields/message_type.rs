@@ -1,3 +1,6 @@
+//! The module with a field to specify the type of a message.
+//! See [`MessageTypeField`].
+
 pub use crypto_msg_type::MessageType;
 
 use super::{FieldDeserializer, FieldError, FieldSerializer};

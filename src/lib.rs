@@ -2,8 +2,8 @@
 //!
 //! The utilities for operating stocks. For example:
 //!
-//! - Using methods under [`mod@data`], you can operate with orderbooks,
-//!   orders and trades.
+//! - Using methods under [`mod@data`], you can operate with data structures,
+//!   such as orderbook, bbo, kline, etc.
 //! - Using methods under [`mod@file`], you can operate with files
 //!   and create a daemon to write files with the well-defined format
 //!   to the well-defined directory.

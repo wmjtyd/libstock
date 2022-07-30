@@ -1,7 +1,7 @@
-//! The methods for operating with orderbooks, orders and trades.
+//! The methods for operating with data structures.
 //!
 //! This module includes some methods for converting numbers,
-//! see the module [`hex`].
+//! see the module [`num`].
 
 pub mod num;
 pub mod serializer;

@@ -1,3 +1,6 @@
+//! The module with a field to store numbers serialized with [`crate::data::num`]'s methods.
+//! See [`DecimalField`].
+
 pub use rust_decimal::Decimal;
 pub use rust_decimal::Error as DecimalError;
 
@@ -6,7 +9,7 @@ use crate::data::num::Encoder;
 
 use super::{FieldDeserializer, FieldError, FieldSerializer};
 
-/// The field to store numbers serialized with [`super::hex::NumToBytesExt`].
+/// The field to store numbers serialized with [`crate::data::num`]'s methods.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DecimalField<const LEN: usize>(pub Decimal);
 

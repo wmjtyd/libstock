@@ -1,3 +1,6 @@
+//! The module with a field to specify the exchange type of a message.
+//! See [`ExchangeTypeField`].
+
 use std::str::FromStr;
 
 use either::Either;
