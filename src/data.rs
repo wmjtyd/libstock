@@ -3,7 +3,7 @@
 //! This module includes some methods for converting numbers,
 //! see the module [`hex`].
 
-pub mod hex;
+pub mod num;
 pub mod serializer;
 
 // #[cfg(feature = "crypto")]
