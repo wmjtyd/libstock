@@ -10,6 +10,8 @@ pub use crypto_message::TradeSide;
 pub use crypto_msg_type::MessageType;
 pub use either::Either;
 pub use rust_decimal::Decimal;
+pub use rust_decimal::Error as DecimalError;
+use typed_builder::TypedBuilder;
 
 use super::{
     num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex, NumError, Encoder, Decoder},
@@ -296,7 +298,34 @@ impl FieldDeserializer<10> for DecimalField<10> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl<const LEN: usize> From<Decimal> for DecimalField<LEN> {
+    fn from(d: Decimal) -> Self {
+        Self(d)
+    }
+}
+
+
+impl<const LEN: usize> From<f32> for DecimalField<LEN> {
+    fn from(f: f32) -> Self {
+        Self(Decimal::from_f32_retain(f).expect("overflow?"))
+    }
+}
+
+impl<const LEN: usize> From<f64> for DecimalField<LEN> {
+    fn from(f: f64) -> Self {
+        Self(Decimal::from_f64_retain(f).expect("overflow?"))
+    }
+}
+
+impl<const LEN: usize> TryFrom<&str> for DecimalField<LEN> {
+    type Error = DecimalError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Ok(Self(Decimal::from_str_exact(s)?))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypedBuilder)]
 /// The price data (10 bytes).
 pub struct PriceDataField {
     /// 價格 (5 bytes)
@@ -304,6 +333,7 @@ pub struct PriceDataField {
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
+    #[builder(setter(into))]
     pub price: DecimalField<5>,
 
     /// 基本量 (5 bytes)
@@ -311,6 +341,7 @@ pub struct PriceDataField {
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
+    #[builder(setter(into))]
     pub quantity_base: DecimalField<5>,
 }
 

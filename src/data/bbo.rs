@@ -10,6 +10,7 @@
 use std::num::ParseFloatError;
 
 use crypto_message::BboMsg;
+use rust_decimal::prelude::ToPrimitive;
 use typed_builder::TypedBuilder;
 
 use super::{
@@ -108,14 +109,18 @@ impl TryFrom<&BboMsg> for BboStructure {
             .market_type(MarketTypeField(value.market_type))
             .message_type(MessageTypeField(value.msg_type))
             .symbol(SymbolPairField::from_pair(&value.pair))
-            .asks(PriceDataField {
-                price: value.ask_price.to_string(),
-                quantity_base: value.ask_quantity_base.to_string(),
-            })
-            .bids(PriceDataField {
-                price: value.bid_price.to_string(),
-                quantity_base: value.bid_quantity_base.to_string(),
-            })
+            .asks(
+                PriceDataField::builder()
+                    .price(value.ask_price)
+                    .quantity_base(value.ask_quantity_base)
+                    .build()
+            )
+            .bids(
+                PriceDataField::builder()
+                    .price(value.bid_price)
+                    .quantity_base(value.bid_quantity_base)
+                    .build()
+            )
             .build())
     }
 }
@@ -133,12 +138,12 @@ impl TryFrom<BboStructure> for BboMsg {
             pair,
             symbol: symbol.to_string(),
             timestamp: value.exchange_timestamp.0 as i64,
-            ask_price: value.asks.price.parse()?,
-            ask_quantity_base: value.asks.quantity_base.parse()?,
+            ask_price: value.asks.price.0.to_f64().expect("overflow?"),
+            ask_quantity_base: value.asks.quantity_base.0.to_f64().expect("overflow?"),
             ask_quantity_quote: 0.0,
             ask_quantity_contract: None,
-            bid_price: value.bids.price.parse()?,
-            bid_quantity_base: value.bids.quantity_base.parse()?,
+            bid_price: value.bids.price.0.to_f64().expect("overflow?"),
+            bid_quantity_base: value.bids.quantity_base.0.to_f64().expect("overflow?"),
             bid_quantity_quote: 0.0,
             bid_quantity_contract: None,
             id: None,
