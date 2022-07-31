@@ -23,3 +23,5 @@ pub mod flag;
 pub mod slack;
 
 pub mod message;
+
+mod compat;

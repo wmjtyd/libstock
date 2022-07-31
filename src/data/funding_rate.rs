@@ -163,3 +163,12 @@ pub enum FundingRateError {
 }
 
 pub type FundingRateResult<T> = Result<T, FundingRateError>;
+
+/* 0.3.0 compatible methods */
+crate::compat::compat_enc!(
+    enc = encode_funding_rate,
+    dec = decode_funding_rate,
+    crawl = FundingRateMsg,
+    result = FundingRateResult,
+    structure = FundingRateStructure
+);

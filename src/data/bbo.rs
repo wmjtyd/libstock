@@ -254,3 +254,12 @@ mod tests {
         // assert_eq!(payload.id, decoded.id);
     }
 }
+
+/* 0.3.0 compatible methods */
+crate::compat::compat_enc!(
+    enc = encode_bbo,
+    dec = decode_bbo,
+    crawl = BboMsg,
+    result = BboResult,
+    structure = BboStructure
+);

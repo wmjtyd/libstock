@@ -151,3 +151,12 @@ pub enum TradeError {
 }
 
 pub type TradeResult<T> = Result<T, TradeError>;
+
+/* 0.3.0 compatible methods */
+crate::compat::compat_enc!(
+    enc = encode_trade,
+    dec = decode_trade,
+    crawl = TradeMsg,
+    result = TradeResult,
+    structure = TradeStructure
+);

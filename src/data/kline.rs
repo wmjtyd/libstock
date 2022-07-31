@@ -151,3 +151,12 @@ pub enum KlineError {
 }
 
 pub type KlineResult<T> = Result<T, KlineError>;
+
+/* 0.3.0 compatible methods */
+crate::compat::compat_enc!(
+    enc = encode_kline,
+    dec = decode_kline,
+    crawl = KlineMsg,
+    result = KlineResult,
+    structure = KlineStructure
+);

@@ -53,12 +53,15 @@ git = "https://github.com/wmjtyd/crypto-crawler-rs"
 rev = "9c7cda9ab90c900c014566f9d279bef822cc37f1"
 
 [features]
-default = ["crypto", "message", "slack"]
+default = ["crypto", "message", "slack", "compat-v0_3"]
 crypto = ["dep:crypto-msg-type", "dep:crypto-market-type", "dep:crypto-message"]
 message = ["nanomsg", "zeromq"]
 nanomsg = ["dep:nanomsg"]
 zeromq = ["dep:zeromq"]
 slack = ["dep:slack-hook"]
+
+# <!> Will be removed in the future release!
+compat-v0_3 = []
 
 [dev-dependencies]
 tracing-subscriber = "0.3.15"

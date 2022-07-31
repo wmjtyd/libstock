@@ -279,3 +279,12 @@ pub enum OrderbookError {
 }
 
 pub type OrderbookResult<T> = Result<T, OrderbookError>;
+
+/* 0.3.0 compatible methods */
+crate::compat::compat_enc!(
+    enc = encode_orderbook,
+    dec = decode_orderbook,
+    crawl = OrderBookMsg,
+    result = OrderbookResult,
+    structure = OrderbookStructure
+);

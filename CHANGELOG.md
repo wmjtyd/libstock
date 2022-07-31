@@ -2,10 +2,81 @@
 
 ## UNRELEASED: 0.4.0
 
+### How to migrate your old codebase to 0.4.0-native architecture?
+
+#### Encoding (Now called *Serializing*)
+
+Assuming your code is using `encode_bbo` (or `encode_orderbook`, whatever):
+
+```rs
+let encoded: Vec<u8> = encode_bbo(your_bbo_msg).unwrap();
+```
+
+First, you have to convert your `Msg` in crypto-crawler,
+to libstock's `Structure`. You can approach it with `try_into()`:
+
+```rs
+// OrderBookMsg → OrderbookStructure, KlineMsg → KlineStructure,
+// TradeMsg → TradeStructure, FundingRateMsg → FundingRateStructure,
+// so on.
+let bbo_structure = BboStructure::try_from(your_bbo_msg)?
+```
+
+Our new serialization method accepts *any* type implementing `Write` –
+in other words, you can pass your Socket, File and anything else writable
+to the `serialize()` method:
+
+```rs
+// Use our serialization method.
+use wmjtyd_libstock::data::serializer::StructureSerializer;
+
+bbo_structure.serialize(your_file)?;
+```
+
+If you prefer the current way, you need to manage your own buffer
+(however, you can pass any buffer implementing `Write` for your case.)
+
+```rs
+let mut buffer = Vec::new();
+bbo_structure.serialize(buffer)?;
+```
+
+#### Decoding (Now called *Deserializing*)
+
+Assuming your code is using `decode_bbo` (or `decode_orderbook`, whatever):
+
+```rs
+let decoded: BboMsg = decode_bbo(src).unwrap();
+```
+
+First, use our deserialization method to construct the Structure.
+It accepts any type implementing `Read` trait, so you can just
+pass your socket, file or anything else readable to the `deserialize()` method.
+
+```rs
+// Use our deserialization method.
+use wmjtyd_libstock::data::serializer::StructureDeserializer;
+
+let decoded = BboStructure::deserialize(&mut your_data_source);
+```
+
+Note that if your data source is a `Vec<T>`, you **must** turn it to a mutable-immutable slice.
+It is counterintuitive, [but it works](https://doc.rust-lang.org/std/io/trait.Read.html#impl-Read-2) ;)
+
+```rs
+let decoded = BboStructure::deserialize(&mut your_vec.as_slice());
+```
+
+Finally, convert your Structure back to the crypto-crawler's Msg:
+
+```rs
+let msg = BboMsg::try_from(decoded)?;
+```
+
 ### 0.4.0 – Breaking Changes
 
 - Methods under `data` module are mostly reshaped. You may need to
-  rewrite your code to adapt this new architecture.
+  rewrite your code to adapt this new architectiure.
   - We have abstracted a `Structure` – To serialize your
     `BboMsg`, do `.try_into()` first.
 - Added a End-Of-Data flag (`\0`) to all the current structure.
@@ -84,7 +155,7 @@
 <!-- <!> has been disabled by default. -->
 <!-- - `file`: Add integration test for writer & reader -->
 - Add encode/decode tests to `data/bbo`
-  - _WIP:_ add other encode/decode tests to `data/*`!
+  - *WIP:* add other encode/decode tests to `data/*`!
 
 ### 0.3.0 – Chores
 
