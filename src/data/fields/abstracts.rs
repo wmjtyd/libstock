@@ -11,9 +11,9 @@ use std::ops::{Deref, DerefMut};
 pub trait Field<const L: usize>: Sized + FieldSerializer<L> + FieldDeserializer<L> {}
 
 /// If a field is interopable.
-/// 
+///
 /// It means:
-/// 
+///
 /// - T –From→ Field(T)
 /// - Field(T) –To→ T
 /// - Field(T) –Deref→ &T

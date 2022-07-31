@@ -3,7 +3,10 @@
 
 pub use crypto_message::TradeSide;
 
-use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer, abstracts::derive_interop_converters, Field};
+use super::{
+    abstracts::derive_interop_converters, Field, FieldDeserializer, FieldError, FieldResult,
+    FieldSerializer,
+};
 
 /// The [`TradeSide`] of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

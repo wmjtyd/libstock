@@ -4,15 +4,15 @@
 use std::ops::Deref;
 use std::ops::DerefMut;
 
+use rust_decimal::prelude::ToPrimitive;
 pub use rust_decimal::Decimal;
 pub use rust_decimal::Error as DecimalError;
-use rust_decimal::prelude::ToPrimitive;
 
 use crate::data::num::Decoder;
 use crate::data::num::Encoder;
 
-use super::Interopable;
 use super::abstracts::derive_hsf;
+use super::Interopable;
 use super::{FieldDeserializer, FieldError, FieldSerializer};
 
 /// The field to store numbers serialized with [`crate::data::num`]'s methods.

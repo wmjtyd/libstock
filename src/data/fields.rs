@@ -7,6 +7,7 @@ pub mod decimal;
 pub mod eod_flag;
 pub mod exchange_type;
 pub mod info_type;
+pub mod kline_indicators;
 pub mod market_type;
 pub mod message_type;
 pub mod period;
@@ -14,7 +15,6 @@ pub mod price_data;
 pub mod symbol_pair;
 pub mod timestamp;
 pub mod trade_side;
-pub mod kline_indicators;
 
 use super::num::NumError;
 use std::time::SystemTimeError;
@@ -26,6 +26,7 @@ pub use decimal::DecimalField;
 pub use eod_flag::EndOfDataFlag;
 pub use exchange_type::ExchangeTypeField;
 pub use info_type::InfoTypeField;
+pub use kline_indicators::KlineIndicatorsField;
 pub use market_type::MarketTypeField;
 pub use message_type::MessageTypeField;
 pub use period::PeriodField;
@@ -33,7 +34,6 @@ pub use price_data::PriceDataField;
 pub use symbol_pair::SymbolPairField;
 pub use timestamp::TimestampField;
 pub use trade_side::TradeSideField;
-pub use kline_indicators::KlineIndicatorsField;
 
 pub use abstracts::{Field, Interopable};
 

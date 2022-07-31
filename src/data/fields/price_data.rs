@@ -5,7 +5,7 @@
 
 use typed_builder::TypedBuilder;
 
-use super::{DecimalField, FieldDeserializer, FieldError, FieldSerializer, Field};
+use super::{DecimalField, Field, FieldDeserializer, FieldError, FieldSerializer};
 
 /// The price data (10 bytes).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypedBuilder)]

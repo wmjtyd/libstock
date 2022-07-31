@@ -32,7 +32,7 @@ derive_interop_converters!(MessageTypeField, MessageType);
 // MessageType does not implement Hash; thus, it is not a
 // high-standard field (hsf).
 //
-// However, it implements Clone, 
+// However, it implements Clone,
 impl Field<1> for MessageTypeField {}
 
 /// Serialize [`MessageType`] to 1 bit identifier.

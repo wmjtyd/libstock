@@ -10,8 +10,7 @@ use super::{
         MessageTypeField, SymbolPairField, TimestampField,
     },
     serializer::{
-        deserialize_block_builder, serialize_block_builder, StructDeserializer,
-        StructSerializer,
+        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
     },
 };
 

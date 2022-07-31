@@ -5,8 +5,8 @@ use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        EndOfDataFlag, ExchangeTypeField, MarketTypeField, MessageTypeField, PriceDataField,
-        SymbolPairField, TimestampField, TradeSideField, FieldError,
+        EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+        PriceDataField, SymbolPairField, TimestampField, TradeSideField,
     },
     serializer::{
         deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
@@ -100,22 +100,20 @@ impl TryFrom<TradeMsg> for TradeStructure {
     type Error = TradeError;
 
     fn try_from(msg: TradeMsg) -> Result<Self, Self::Error> {
-        Ok(
-            TradeStructure::builder()
-                .exchange_timestamp(msg.timestamp)
-                .exchange_type(ExchangeTypeField::try_from_str(&msg.exchange)?)
-                .market_type(msg.market_type)
-                .message_type(msg.msg_type)
-                .symbol(SymbolPairField::from_pair(&msg.pair))
-                .trade_side(msg.side)
-                .trace_price(
-                    PriceDataField::builder()
-                        .price(msg.price)
-                        .quantity_base(msg.quantity_base)
-                        .build()
-                )
-                .build()
-        )
+        Ok(TradeStructure::builder()
+            .exchange_timestamp(msg.timestamp)
+            .exchange_type(ExchangeTypeField::try_from_str(&msg.exchange)?)
+            .market_type(msg.market_type)
+            .message_type(msg.msg_type)
+            .symbol(SymbolPairField::from_pair(&msg.pair))
+            .trade_side(msg.side)
+            .trace_price(
+                PriceDataField::builder()
+                    .price(msg.price)
+                    .quantity_base(msg.quantity_base)
+                    .build(),
+            )
+            .build())
     }
 }
 
@@ -125,23 +123,21 @@ impl TryFrom<TradeStructure> for TradeMsg {
     fn try_from(value: TradeStructure) -> Result<Self, Self::Error> {
         let SymbolPairField { symbol, pair } = value.symbol;
 
-        Ok(
-            TradeMsg {
-                exchange: value.exchange_type.into(),
-                market_type: value.market_type.into(),
-                msg_type: value.message_type.into(),
-                pair,
-                symbol: symbol.to_string(),
-                timestamp: value.exchange_timestamp.into(),
-                side: value.trade_side.into(),
-                price: value.trace_price.price.try_into()?,
-                quantity_base: value.trace_price.quantity_base.try_into()?,
-                quantity_quote: 0.0,
-                quantity_contract: None,
-                trade_id: String::new(),
-                json: String::new(),
-            }
-        )
+        Ok(TradeMsg {
+            exchange: value.exchange_type.into(),
+            market_type: value.market_type.into(),
+            msg_type: value.message_type.into(),
+            pair,
+            symbol: symbol.to_string(),
+            timestamp: value.exchange_timestamp.into(),
+            side: value.trade_side.into(),
+            price: value.trace_price.price.try_into()?,
+            quantity_base: value.trace_price.quantity_base.try_into()?,
+            quantity_quote: 0.0,
+            quantity_contract: None,
+            trade_id: String::new(),
+            json: String::new(),
+        })
     }
 }
 
