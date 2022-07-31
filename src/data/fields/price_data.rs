@@ -3,7 +3,10 @@
 //!
 //! For more information, see [`PriceDataField`].
 
+use crypto_message::Order;
 use typed_builder::TypedBuilder;
+
+use crate::data::orderbook::OrderbookError;
 
 use super::{DecimalField, Field, FieldDeserializer, FieldError, FieldSerializer};
 
@@ -50,6 +53,30 @@ impl FieldDeserializer<10> for PriceDataField {
         Ok(Self {
             price: DecimalField::deserialize(price)?,
             quantity_base: DecimalField::deserialize(quantity_base)?,
+        })
+    }
+}
+
+impl TryFrom<PriceDataField> for Order {
+    type Error = OrderbookError;
+
+    fn try_from(value: PriceDataField) -> Result<Self, Self::Error> {
+        Ok(Order {
+            price: value.price.try_into()?,
+            quantity_base: value.quantity_base.try_into()?,
+            quantity_quote: 0.0,
+            quantity_contract: None,
+        })
+    }
+}
+
+impl TryFrom<Order> for PriceDataField {
+    type Error = OrderbookError;
+
+    fn try_from(value: Order) -> Result<Self, Self::Error> {
+        Ok(PriceDataField {
+            price: value.price.into(),
+            quantity_base: value.quantity_base.into(),
         })
     }
 }
