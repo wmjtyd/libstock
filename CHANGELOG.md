@@ -73,6 +73,50 @@ Finally, convert your Structure back to the crypto-crawler's Msg:
 let msg = BboMsg::try_from(decoded)?;
 ```
 
+#### Number Encoding and Decoding
+
+We have rewritten the encoding and decoding methods for clearer
+architecture, robust and performance. However, it introduces
+some breaking change though it can be easily resolved.
+
+Assuming you have such this code:
+
+```rs
+let num = 1234_5678.to_string();
+u32::encode_bytes(&num)
+```
+
+First, You need to convert your integer, float number, or number string
+to `rust_decimal::Decimal`. We have re-exported it in `data::num`
+so you won't need to add another dependencies by yourself.
+
+Take the above as an example, we can rewrite it to:
+
+```rs
+// Integer
+let num = rust_decimal::from(1234_5678);
+// Float; you should do your own error handling.
+let num = rust_decimal::from_f32_retain(1234.5678).map_err(...)?;
+// Number string; you should do your own error handling.
+let num = rust_decimal::from_str_exact("1234.5678")?;
+```
+
+After that, we include our new encode API and encode the `num`:
+
+```rs
+use wmjtyd_libstock::data::num::Encoder;
+
+let num_bytes: [u8; 5] = num.encode()?;
+```
+
+To decode the number, use `Decoder::decode`:
+
+```rs
+use wmjtyd_libstock::data::num::Decoder;
+
+let num = Decoder::decode(&num_bytes)?;
+```
+
 ### 0.4.0 – Breaking Changes
 
 - Methods under `data` module are mostly reshaped. You may need to
