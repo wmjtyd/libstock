@@ -15,8 +15,8 @@ pub mod fields;
 #[cfg(feature = "crypto")]
 pub mod order;
 
-// #[cfg(feature = "crypto")]
-// pub mod trade;
+#[cfg(feature = "crypto")]
+pub mod trade;
 
 #[cfg(feature = "crypto")]
 pub mod bbo;
