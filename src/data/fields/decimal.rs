@@ -1,12 +1,17 @@
 //! The module with a field to store numbers serialized with [`crate::data::num`]'s methods.
 //! See [`DecimalField`].
 
+use std::ops::Deref;
+use std::ops::DerefMut;
+
 pub use rust_decimal::Decimal;
 pub use rust_decimal::Error as DecimalError;
 
 use crate::data::num::Decoder;
 use crate::data::num::Encoder;
 
+use super::Interopable;
+use super::abstracts::derive_hsf;
 use super::{FieldDeserializer, FieldError, FieldSerializer};
 
 /// The field to store numbers serialized with [`crate::data::num`]'s methods.
@@ -70,3 +75,28 @@ impl<const LEN: usize> TryFrom<&str> for DecimalField<LEN> {
         Ok(Self(Decimal::from_str_exact(s)?))
     }
 }
+
+impl<const LEN: usize> From<DecimalField<LEN>> for Decimal {
+    fn from(f: DecimalField<LEN>) -> Self {
+        f.0
+    }
+}
+
+impl<const LEN: usize> Deref for DecimalField<LEN> {
+    type Target = Decimal;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<const LEN: usize> DerefMut for DecimalField<LEN> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<const LEN: usize> Interopable<Decimal> for DecimalField<LEN> {}
+
+derive_hsf!(DecimalField<5>, Decimal, 5);
+derive_hsf!(DecimalField<10>, Decimal, 10);

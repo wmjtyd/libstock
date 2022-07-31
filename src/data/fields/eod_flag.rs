@@ -4,7 +4,7 @@
 use super::{FieldDeserializer, FieldError, FieldSerializer};
 
 /// The flag indicating the end of data. (1 byte).
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EndOfDataFlag;
 
 impl FieldSerializer<1> for EndOfDataFlag {

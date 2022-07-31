@@ -3,7 +3,7 @@
 
 use typed_builder::TypedBuilder;
 
-use super::{bimap::create_bimap, FieldDeserializer, FieldError, FieldSerializer};
+use super::{bimap::create_bimap, FieldDeserializer, FieldError, FieldSerializer, Field};
 
 /// Exchange-specific trading symbol or id, recognized by RESTful API.
 pub type Symbol = u16;
@@ -56,6 +56,8 @@ impl FieldDeserializer<2> for SymbolPairField {
         Ok(Self { symbol, pair })
     }
 }
+
+impl Field<2> for SymbolPairField {}
 
 create_bimap!(SYMBOL_PAIR {
     u16 => &'static str,

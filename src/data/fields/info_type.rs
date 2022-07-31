@@ -5,7 +5,10 @@ use std::str::FromStr;
 
 use strum::{EnumString, FromRepr};
 
-use super::{Either, FieldDeserializer, FieldError, FieldResult, FieldSerializer};
+use super::{
+    abstracts::{derive_hsf, derive_interop_converters},
+    Either, FieldDeserializer, FieldError, FieldResult, FieldSerializer,
+};
 
 /// The info type (`asks` or `bids`) of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,6 +41,9 @@ impl FieldDeserializer<1> for InfoTypeField {
         Ok(Self(name))
     }
 }
+
+derive_interop_converters!(InfoTypeField, InfoType);
+derive_hsf!(InfoTypeField, InfoType, 1);
 
 #[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq, Eq, Hash)]
 #[strum(serialize_all = "lowercase")]

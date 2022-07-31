@@ -3,7 +3,11 @@
 
 pub use crypto_market_type::MarketType;
 
-use super::{bimap::create_bimap, FieldDeserializer, FieldError, FieldSerializer};
+use super::{
+    abstracts::{derive_hsf, derive_interop_converters},
+    bimap::create_bimap,
+    FieldDeserializer, FieldError, FieldSerializer,
+};
 
 /// The market type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -32,6 +36,9 @@ impl FieldDeserializer<1> for MarketTypeField {
         Ok(Self(*name))
     }
 }
+
+derive_interop_converters!(MarketTypeField, MarketType);
+derive_hsf!(MarketTypeField, MarketType, 1);
 
 create_bimap!(MARKET_TYPE_BIT {
     MarketType => u8,

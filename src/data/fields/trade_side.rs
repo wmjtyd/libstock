@@ -3,7 +3,7 @@
 
 pub use crypto_message::TradeSide;
 
-use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};
+use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer, abstracts::derive_interop_converters, Field};
 
 /// The [`TradeSide`] of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +24,10 @@ impl FieldDeserializer<1> for TradeSideField {
         Ok(Self(bit_deserialize_trade_side(src[0])?))
     }
 }
+
+derive_interop_converters!(TradeSideField, TradeSide);
+
+impl Field<1> for TradeSideField {}
 
 /// Serialize [`TradeSide`] to 1 bit identifier.
 fn bit_serialize_trade_side(side: TradeSide) -> u8 {

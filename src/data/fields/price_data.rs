@@ -5,7 +5,7 @@
 
 use typed_builder::TypedBuilder;
 
-use super::{DecimalField, FieldDeserializer, FieldError, FieldSerializer};
+use super::{DecimalField, FieldDeserializer, FieldError, FieldSerializer, Field};
 
 /// The price data (10 bytes).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypedBuilder)]
@@ -53,3 +53,5 @@ impl FieldDeserializer<10> for PriceDataField {
         })
     }
 }
+
+impl Field<10> for PriceDataField {}

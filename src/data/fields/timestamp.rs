@@ -5,7 +5,7 @@ use std::time::SystemTime;
 
 use crate::data::num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex};
 
-use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};
+use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer, abstracts::{derive_hsf, derive_interop_converters}};
 
 /// The general timestamp field (6 bytes).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -44,3 +44,6 @@ impl FieldDeserializer<6> for TimestampField {
         Ok(Self(six_byte_hex_to_unix_ms(src)))
     }
 }
+
+derive_interop_converters!(TimestampField, u64);
+derive_hsf!(TimestampField, u64, 6);

@@ -1,6 +1,8 @@
 //! The field (de)serialization module for libstock.
 
+mod abstracts;
 mod bimap;
+
 pub mod decimal;
 pub mod eod_flag;
 pub mod exchange_type;
@@ -30,6 +32,8 @@ pub use price_data::PriceDataField;
 pub use symbol_pair::SymbolPairField;
 pub use timestamp::TimestampField;
 pub use trade_side::TradeSideField;
+
+pub use abstracts::{Field, Interopable};
 
 #[derive(thiserror::Error, Debug)]
 pub enum FieldError {

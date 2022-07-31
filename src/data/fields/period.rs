@@ -1,7 +1,11 @@
 //! The module with a field to specify the period of a message.
 //! See [`PeriodField`].
 
-use super::{bimap::create_bimap, Either, FieldDeserializer, FieldError, FieldSerializer};
+use super::{
+    abstracts::{derive_hsf, derive_interop_converters},
+    bimap::create_bimap,
+    Either, FieldDeserializer, FieldError, FieldSerializer,
+};
 
 /// The period of a message (1 byte).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -32,6 +36,16 @@ impl FieldDeserializer<1> for PeriodField {
         Ok(Self(name.to_string()))
     }
 }
+
+derive_interop_converters!(PeriodField, String);
+
+impl From<&str> for PeriodField {
+    fn from(src: &str) -> Self {
+        Self(src.to_string())
+    }
+}
+
+derive_hsf!(PeriodField, String, 1);
 
 create_bimap!(PERIOD {
     &'static str => u8,

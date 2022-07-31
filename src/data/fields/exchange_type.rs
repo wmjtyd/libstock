@@ -6,7 +6,10 @@ use std::str::FromStr;
 use either::Either;
 use strum::{EnumString, FromRepr};
 
-use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};
+use super::{
+    abstracts::{derive_hsf, derive_interop_converters},
+    FieldDeserializer, FieldError, FieldResult, FieldSerializer,
+};
 
 /// The exchange type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -39,6 +42,9 @@ impl FieldDeserializer<1> for ExchangeTypeField {
         Ok(Self(name))
     }
 }
+
+derive_interop_converters!(ExchangeTypeField, Exchange);
+derive_hsf!(ExchangeTypeField, Exchange, 1);
 
 #[derive(Copy, Clone, FromRepr, strum::Display, EnumString, Debug, PartialEq, Eq, Hash)]
 #[strum(serialize_all = "lowercase")]

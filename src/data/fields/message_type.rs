@@ -3,7 +3,9 @@
 
 pub use crypto_msg_type::MessageType;
 
-use super::{FieldDeserializer, FieldError, FieldSerializer};
+use super::{
+    abstracts::derive_interop_converters, Field, FieldDeserializer, FieldError, FieldSerializer,
+};
 
 /// The type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +26,14 @@ impl FieldDeserializer<1> for MessageTypeField {
         Ok(Self(bit_deserialize_message_type(src[0])))
     }
 }
+
+derive_interop_converters!(MessageTypeField, MessageType);
+
+// MessageType does not implement Hash; thus, it is not a
+// high-standard field (hsf).
+//
+// However, it implements Clone, 
+impl Field<1> for MessageTypeField {}
 
 /// Serialize [`MessageType`] to 1 bit identifier.
 fn bit_serialize_message_type(mt: MessageType) -> u8 {
