@@ -32,6 +32,11 @@ nanomsg = { version = "0.7.2", optional = true }
 derive_builder = "0.11.2"
 async-trait = "0.1.57"
 typed-builder = "0.10.0"
+arcstr = { version = "1.1.4", optional = true, features = ["serde"] }
+notify = { version = "5.0.0-beta.15", optional = true }
+serde = { version = "1.0.140", features = ["derive"], optional = true }
+anyhow = { version = "1.0.58", optional = true }
+serde_json = { version = "1.0.82", optional = true }
 zmq2 = { version = "0.5.0", optional = true }
 futures = "0.3.21"
 
@@ -53,6 +58,13 @@ optional = true
 git = "https://github.com/wmjtyd/crypto-crawler-rs"
 rev = "9c7cda9ab90c900c014566f9d279bef822cc37f1"
 
+[dev-dependencies]
+tracing-subscriber = "0.3.15"
+tokio = { version = "1.20.1", features = ["time", "rt", "rt-multi-thread", "macros"] }
+anyhow = "1.0.59"
+rust_decimal_macros = "1.26.1"
+criterion = "0.3.6"
+
 [features]
 default = ["crypto", "message", "slack"]
 crypto = ["dep:crypto-msg-type", "dep:crypto-market-type", "dep:crypto-message"]
@@ -60,16 +72,10 @@ message = ["nanomsg", "zeromq"]
 nanomsg = ["dep:nanomsg"]
 zeromq = ["dep:zmq2"]
 slack = ["dep:slack-hook"]
+file_monitor = ["arcstr", "notify", "serde", "anyhow", "serde_json"]
 
 # <!> Will be removed in the future release!
 compat-v0_3 = []
-
-[dev-dependencies]
-tracing-subscriber = "0.3.15"
-tokio = { version = "1.20.1", features = ["time", "rt", "rt-multi-thread", "macros"] }
-anyhow = "1.0.59"
-rust_decimal_macros = "1.26.1"
-criterion = "0.3.6"
 
 [[bench]]
 name = "bbo_ser_des"

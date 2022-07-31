@@ -7,6 +7,9 @@ pub mod reader;
 pub mod timestamp;
 pub mod writer;
 
+#[cfg(feature = "file_monitor")]
+pub mod monitor;
+
 mod datadir;
 
 #[cfg(test)]
