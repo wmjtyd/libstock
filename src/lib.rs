@@ -11,10 +11,6 @@
 //! - Using methods under [`mod@slack`] to send notifications to Slack with Slack Hook.
 //! - Using methods under [`mod@message`] to subscribe and publish based on Nanomsg or Zeromq.
 //!
-//! These utilities are especial for [wmjtyd/crypto-market](https://github.com/wmjtyd/crypto-market);
-//! however, you can also use it in your project. We licensed it under `Apache-2.0`, the same
-//! license to `crypto-market`! 😄
-//!
 //! ## License
 //!
 //! Apache-2.0
