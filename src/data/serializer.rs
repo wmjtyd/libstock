@@ -75,7 +75,7 @@ where
 macro_rules! serialize_block_builder {
     ($($field:expr),+ => $writer:expr) => {{
         $(
-            $field.serialize_to_writer($writer)??
+            $crate::data::serializer::FieldSerializer::serialize_to_writer(&$field, $writer)??
         );+
     }}
 }
