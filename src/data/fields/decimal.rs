@@ -6,6 +6,7 @@ use std::ops::DerefMut;
 
 pub use rust_decimal::Decimal;
 pub use rust_decimal::Error as DecimalError;
+use rust_decimal::prelude::ToPrimitive;
 
 use crate::data::num::Decoder;
 use crate::data::num::Encoder;
@@ -65,6 +66,22 @@ impl<const LEN: usize> From<f32> for DecimalField<LEN> {
 impl<const LEN: usize> From<f64> for DecimalField<LEN> {
     fn from(f: f64) -> Self {
         Self(Decimal::from_f64_retain(f).expect("overflow?"))
+    }
+}
+
+impl<const LEN: usize> TryFrom<DecimalField<LEN>> for f32 {
+    type Error = FieldError;
+
+    fn try_from(value: DecimalField<LEN>) -> Result<Self, Self::Error> {
+        value.0.to_f32().ok_or(FieldError::FloatOverflow("f32"))
+    }
+}
+
+impl<const LEN: usize> TryFrom<DecimalField<LEN>> for f64 {
+    type Error = FieldError;
+
+    fn try_from(value: DecimalField<LEN>) -> Result<Self, Self::Error> {
+        value.0.to_f64().ok_or(FieldError::FloatOverflow("f64"))
     }
 }
 
