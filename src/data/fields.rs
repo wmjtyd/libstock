@@ -14,6 +14,7 @@ pub mod price_data;
 pub mod symbol_pair;
 pub mod timestamp;
 pub mod trade_side;
+pub mod kline_indicators;
 
 use super::num::NumError;
 use std::time::SystemTimeError;
@@ -32,6 +33,7 @@ pub use price_data::PriceDataField;
 pub use symbol_pair::SymbolPairField;
 pub use timestamp::TimestampField;
 pub use trade_side::TradeSideField;
+pub use kline_indicators::KlineIndicatorsField;
 
 pub use abstracts::{Field, Interopable};
 
