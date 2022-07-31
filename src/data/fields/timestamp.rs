@@ -45,5 +45,17 @@ impl FieldDeserializer<6> for TimestampField {
     }
 }
 
+impl From<i64> for TimestampField {
+    fn from(src: i64) -> Self {
+        Self(src as u64)
+    }
+}
+
+impl From<TimestampField> for i64 {
+    fn from(src: TimestampField) -> Self {
+        src.0 as i64
+    }
+}
+
 derive_interop_converters!(TimestampField, u64);
 derive_hsf!(TimestampField, u64, 6);

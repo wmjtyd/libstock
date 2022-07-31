@@ -43,6 +43,12 @@ impl FieldDeserializer<1> for ExchangeTypeField {
     }
 }
 
+impl From<ExchangeTypeField> for String {
+    fn from(field: ExchangeTypeField) -> Self {
+        field.to_string()
+    }
+}
+
 derive_interop_converters!(ExchangeTypeField, Exchange);
 derive_hsf!(ExchangeTypeField, Exchange, 1);
 
