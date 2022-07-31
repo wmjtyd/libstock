@@ -43,9 +43,6 @@ pub enum FieldError {
     #[error("number encode/decode error: {0}")]
     NumError(#[from] NumError),
 
-    #[error("failed to read {1} bytes from reader")]
-    ReadFromReaderFailed(std::io::Error, usize),
-
     #[error("failed to get system time: {0}")]
     SystemTimeError(#[from] SystemTimeError),
 
@@ -58,8 +55,9 @@ pub enum FieldError {
     #[error("this period has not been implemented: {0:?}")]
     UnimplementedPeriod(Either<String, u8>),
 
-    #[error("failed to convert the following bytes to f64: {0:?}")]
-    DecimalConvertF64Failed(Vec<u8>),
+    /// The inner value is the type (such as `f32` or `f64`).
+    #[error("seems like the convert between Decimal and {0} is overflowed")]
+    FloatOverflow(&'static str),
 
     #[error("data ended too early (missing \\0 in the end)!")]
     DataEndedTooEarly,

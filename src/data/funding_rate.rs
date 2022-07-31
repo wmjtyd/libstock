@@ -1,6 +1,6 @@
 //! The funding rate related operations.
 
-use crypto_message::FundingRateMsg;
+pub use crypto_message::FundingRateMsg;
 use rust_decimal::prelude::ToPrimitive;
 use typed_builder::TypedBuilder;
 
@@ -10,7 +10,7 @@ use super::{
         MessageTypeField, SymbolPairField, TimestampField,
     },
     serializer::{
-        deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
+        deserialize_block_builder, serialize_block_builder, StructDeserializer,
         StructSerializer,
     },
 };
@@ -140,7 +140,7 @@ impl TryFrom<FundingRateStructure> for FundingRateMsg {
             pair,
             msg_type: s.message_type.into(),
             timestamp: s.exchange_timestamp.into(),
-            funding_rate: s.funding_rate.to_f64().expect("overflow?"),
+            funding_rate: s.funding_rate.try_into()?,
             funding_time: s.funding_time.into(),
             estimated_rate: s.estimated_rate.to_f64(),
             json: String::new(),

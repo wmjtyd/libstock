@@ -7,8 +7,7 @@
 //! You can still implement your own format by implementing the [`TryFrom`]
 //! between your structure and [`BboStructure`].
 
-use crypto_message::BboMsg;
-use rust_decimal::prelude::ToPrimitive;
+pub use crypto_message::BboMsg;
 use typed_builder::TypedBuilder;
 
 use super::{
@@ -17,7 +16,7 @@ use super::{
         PriceDataField, SymbolPairField, TimestampField,
     },
     serializer::{
-        deserialize_block_builder, serialize_block_builder, FieldSerializer, StructDeserializer,
+        deserialize_block_builder, serialize_block_builder, StructDeserializer,
         StructSerializer,
     },
 };
@@ -140,12 +139,12 @@ impl TryFrom<BboStructure> for BboMsg {
             pair,
             symbol: symbol.to_string(),
             timestamp: value.exchange_timestamp.into(),
-            ask_price: value.asks.price.to_f64().expect("overflow?"),
-            ask_quantity_base: value.asks.quantity_base.to_f64().expect("overflow?"),
+            ask_price: value.asks.price.try_into()?,
+            ask_quantity_base: value.asks.quantity_base.try_into()?,
             ask_quantity_quote: 0.0,
             ask_quantity_contract: None,
-            bid_price: value.bids.price.to_f64().expect("overflow?"),
-            bid_quantity_base: value.bids.quantity_base.to_f64().expect("overflow?"),
+            bid_price: value.bids.price.try_into()?,
+            bid_quantity_base: value.bids.quantity_base.try_into()?,
             bid_quantity_quote: 0.0,
             bid_quantity_contract: None,
             id: None,
