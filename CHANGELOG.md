@@ -4,6 +4,21 @@
 
 ### How to migrate your old codebase to 0.4.0-native architecture?
 
+#### Compatibility Layer
+
+**To enable it, enable `compat-v0_3` feature.**
+
+The built-in compatibility layer emulates what
+v0.3.x used to behave, including the *serialization*,
+*deserialization*, *number encoding* and *number decoding*.
+
+With this emulation, you can migrate your code with less pain–
+most of the current components will mostly behave as before. However,
+all of them are marked as `deprecated`, and we may remove
+this layer in the future major version (such as 0.5.x).
+
+DO NOT DEPEND ON THIS LAYER, and migrate your codebase as long as possible! This layer may slow down your program, and the layer may have some unexpected changes compared to the 0.3.x version (for example, the Error variant).
+
 #### Encoding (Now called *Serializing*)
 
 Assuming your code is using `encode_bbo` (or `encode_orderbook`, whatever):
@@ -116,6 +131,21 @@ use wmjtyd_libstock::data::num::Decoder;
 
 let num = Decoder::decode(&num_bytes)?;
 ```
+
+#### Fields
+
+We did not write the compatibility layer for fields,
+as it used to be internally used in the serialization and deserialization, and most people may not operate with this.
+
+Some notable big changes to migrate your codebase:
+
+- `data::types` has merged into `data::fields`.
+- All the `-Repr` are renamed to `-Field`.
+- `try_from_reader` → `deserialize_from_reader`
+- `from_bytes` (or `try_from_bytes`) → `deserialize`
+- `to_bytes` (or `try_to_bytes`) → `serialize`
+- `SymbolPairField` is no longer a tuple – its fields has been named now.
+- `ReadExt` has been merged to `Deserializer`.
 
 ### 0.4.0 – Breaking Changes
 
