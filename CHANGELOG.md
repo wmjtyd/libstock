@@ -111,7 +111,7 @@ Take the above as an example, we can rewrite it to:
 // Integer
 let num = rust_decimal::from(1234_5678);
 // Float; you should do your own error handling.
-let num = rust_decimal::from_f32_retain(1234.5678).map_err(...)?;
+let num = rust_decimal::from_f32(1234.5678).map_err(...)?;
 // Number string; you should do your own error handling.
 let num = rust_decimal::from_str_exact("1234.5678")?;
 ```

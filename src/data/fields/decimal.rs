@@ -4,6 +4,7 @@
 use std::ops::Deref;
 use std::ops::DerefMut;
 
+use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 pub use rust_decimal::Decimal;
 pub use rust_decimal::Error as DecimalError;
@@ -59,13 +60,13 @@ impl<const LEN: usize> From<Decimal> for DecimalField<LEN> {
 
 impl<const LEN: usize> From<f32> for DecimalField<LEN> {
     fn from(f: f32) -> Self {
-        Self(Decimal::from_f32_retain(f).expect("overflow?"))
+        Self(Decimal::from_f32(f).expect("overflow?"))
     }
 }
 
 impl<const LEN: usize> From<f64> for DecimalField<LEN> {
     fn from(f: f64) -> Self {
-        Self(Decimal::from_f64_retain(f).expect("overflow?"))
+        Self(Decimal::from_f64(f).expect("overflow?"))
     }
 }
 
