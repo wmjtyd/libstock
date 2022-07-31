@@ -4,7 +4,7 @@ macro_rules! compat_enc {
     (
         enc = $enc_method:ident,
         dec = $dec_method:ident,
-        crawl = $crawler_type:ty, 
+        crawl = $crawler_type:ty,
         result = $result_type:tt,
         structure = $structure_type:ty
     ) => {
@@ -14,7 +14,7 @@ macro_rules! compat_enc {
         pub fn $enc_method(src: &$crawler_type) -> $result_type<Vec<u8>> {
             let mut buf = Vec::new();
             let structure: $structure_type = src.try_into()?;
-        
+
             structure.serialize(&mut buf)?;
             Ok(buf)
         }

@@ -2,8 +2,8 @@
 
 use std::io::{Read, Write};
 
-pub use crypto_message::OrderBookMsg;
 use super::fields::price_data::Order;
+pub use crypto_message::OrderBookMsg;
 
 use typed_builder::TypedBuilder;
 
@@ -231,13 +231,25 @@ impl TryFrom<&OrderBookMsg> for OrderbookStructure {
             .asks(
                 OrdersBox::builder()
                     .direction(InfoType::Asks)
-                    .orders(value.asks.iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .orders(
+                        value
+                            .asks
+                            .iter()
+                            .map(TryInto::try_into)
+                            .collect::<Result<Vec<PriceDataField>, _>>()?,
+                    )
                     .build(),
             )
             .bids(
                 OrdersBox::builder()
                     .direction(InfoType::Bids)
-                    .orders(value.bids.iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .orders(
+                        value
+                            .bids
+                            .iter()
+                            .map(TryInto::try_into)
+                            .collect::<Result<Vec<PriceDataField>, _>>()?,
+                    )
                     .build(),
             )
             .build())
@@ -249,8 +261,18 @@ impl TryFrom<OrderbookStructure> for OrderBookMsg {
 
     fn try_from(value: OrderbookStructure) -> Result<Self, Self::Error> {
         let SymbolPairField { symbol, pair } = value.symbol;
-        let asks = value.asks.orders.into_iter().map(TryInto::try_into).collect::<Result<Vec<Order>, _>>()?;
-        let bids = value.bids.orders.into_iter().map(TryInto::try_into).collect::<Result<Vec<Order>, _>>()?;
+        let asks = value
+            .asks
+            .orders
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<Order>, _>>()?;
+        let bids = value
+            .bids
+            .orders
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<Order>, _>>()?;
 
         Ok(Self {
             exchange: value.exchange_type.into(),
@@ -264,7 +286,7 @@ impl TryFrom<OrderbookStructure> for OrderBookMsg {
             bids,
             seq_id: None,
             prev_seq_id: None,
-            json: String::new()
+            json: String::new(),
         })
     }
 }
