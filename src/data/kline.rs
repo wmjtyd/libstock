@@ -1,14 +1,17 @@
 //! The kline-related operations.
 
 // TODO: change to CandlestickMsg
-use crypto_message::KlineMsg;
+pub use crypto_message::KlineMsg;
 use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        TimestampField, ExchangeTypeField, MarketTypeField, MessageTypeField, SymbolPairField, PeriodField, KlineIndicatorsField, EndOfDataFlag, FieldError,
+        EndOfDataFlag, ExchangeTypeField, FieldError, KlineIndicatorsField, MarketTypeField,
+        MessageTypeField, PeriodField, SymbolPairField, TimestampField,
     },
-    serializer::{StructSerializer, serialize_block_builder, StructDeserializer, deserialize_block_builder},
+    serializer::{
+        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
+    },
 };
 
 /// The structure of a K-line (also known as Candlestick).
@@ -100,13 +103,14 @@ impl TryFrom<KlineMsg> for KlineStructure {
             .message_type(value.msg_type)
             .symbol(SymbolPairField::from_pair(&value.pair))
             .period(value.period)
-            .indicator(KlineIndicatorsField::builder()
-                .open(value.open)
-                .high(value.high)
-                .low(value.low)
-                .close(value.close)
-                .volume(value.volume)
-                .build()
+            .indicator(
+                KlineIndicatorsField::builder()
+                    .open(value.open)
+                    .high(value.high)
+                    .low(value.low)
+                    .close(value.close)
+                    .volume(value.volume)
+                    .build(),
             )
             .build())
     }
