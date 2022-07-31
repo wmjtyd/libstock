@@ -1,7 +1,7 @@
 //! The module with a field to specify the flag indicating the end of data.
 //! See [`EndOfDataFlag`].
 
-use super::{FieldDeserializer, FieldError, FieldSerializer};
+use super::{FieldDeserializer, FieldError, FieldSerializer, Field};
 
 /// The flag indicating the end of data. (1 byte).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,3 +26,5 @@ impl FieldDeserializer<1> for EndOfDataFlag {
         }
     }
 }
+
+impl Field<1> for EndOfDataFlag {}
