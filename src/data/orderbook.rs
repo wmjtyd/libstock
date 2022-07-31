@@ -218,10 +218,10 @@ impl StructDeserializer for OrderbookStructure {
     }
 }
 
-impl TryFrom<OrderBookMsg> for OrderbookStructure {
+impl TryFrom<&OrderBookMsg> for OrderbookStructure {
     type Error = OrderbookError;
 
-    fn try_from(value: OrderBookMsg) -> Result<Self, Self::Error> {
+    fn try_from(value: &OrderBookMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
             .exchange_timestamp(value.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
@@ -231,13 +231,13 @@ impl TryFrom<OrderBookMsg> for OrderbookStructure {
             .asks(
                 OrdersBox::builder()
                     .direction(InfoType::Asks)
-                    .orders(value.asks.into_iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .orders(value.asks.iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
                     .build(),
             )
             .bids(
                 OrdersBox::builder()
                     .direction(InfoType::Bids)
-                    .orders(value.bids.into_iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .orders(value.bids.iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
                     .build(),
             )
             .build())

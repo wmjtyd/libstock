@@ -96,10 +96,10 @@ impl StructDeserializer for TradeStructure {
     }
 }
 
-impl TryFrom<TradeMsg> for TradeStructure {
+impl TryFrom<&TradeMsg> for TradeStructure {
     type Error = TradeError;
 
-    fn try_from(msg: TradeMsg) -> Result<Self, Self::Error> {
+    fn try_from(msg: &TradeMsg) -> Result<Self, Self::Error> {
         Ok(TradeStructure::builder()
             .exchange_timestamp(msg.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&msg.exchange)?)

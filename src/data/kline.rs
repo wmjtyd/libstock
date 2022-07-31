@@ -92,17 +92,17 @@ impl StructDeserializer for KlineStructure {
     }
 }
 
-impl TryFrom<KlineMsg> for KlineStructure {
+impl TryFrom<&KlineMsg> for KlineStructure {
     type Error = KlineError;
 
-    fn try_from(value: KlineMsg) -> Result<Self, Self::Error> {
+    fn try_from(value: &KlineMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
             .exchange_timestamp(value.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
             .market_type(value.market_type)
             .message_type(value.msg_type)
             .symbol(SymbolPairField::from_pair(&value.pair))
-            .period(value.period)
+            .period(value.period.clone())
             .indicator(
                 KlineIndicatorsField::builder()
                     .open(value.open)

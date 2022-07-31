@@ -69,10 +69,10 @@ impl TryFrom<PriceDataField> for Order {
     }
 }
 
-impl TryFrom<Order> for PriceDataField {
+impl TryFrom<&Order> for PriceDataField {
     type Error = FieldError;
 
-    fn try_from(value: Order) -> Result<Self, Self::Error> {
+    fn try_from(value: &Order) -> Result<Self, Self::Error> {
         Ok(PriceDataField {
             price: value.price.into(),
             quantity_base: value.quantity_base.into(),
