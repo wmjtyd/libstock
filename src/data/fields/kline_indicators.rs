@@ -80,7 +80,6 @@ impl FieldDeserializer<30> for KlineIndicatorsField {
         let close = DecimalField::deserialize(arrayref::array_ref![src, offset, 5])?;
         offset += 5;
         let volume = DecimalField::deserialize(arrayref::array_ref![src, offset, 10])?;
-        offset += 10;
 
         Ok(Self {
             open,

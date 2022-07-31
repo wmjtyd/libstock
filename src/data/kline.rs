@@ -1,157 +1,149 @@
 //! The kline-related operations.
 
-use std::io::BufReader;
-
 // TODO: change to CandlestickMsg
 use crypto_message::KlineMsg;
-use rust_decimal::prelude::ToPrimitive;
+use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        ExchangeTimestampRepr, ExchangeTypeRepr, MarketTypeRepr, MessageTypeRepr, PeriodRepr,
-        ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+        TimestampField, ExchangeTypeField, MarketTypeField, MessageTypeField, SymbolPairField, PeriodField, KlineIndicatorsField, EndOfDataFlag, FieldError,
     },
-    hex::{HexDataError, NumToBytesExt},
+    serializer::{StructSerializer, serialize_block_builder, StructDeserializer, deserialize_block_builder},
 };
 
-/// The size of the k-line indicators.
-///
-/// `[open, high, low, close, volume]`
-const KLINE_INDICATOR_SIZE: [usize; 5] = [5, 5, 5, 5, 10];
+/// The structure of a K-line (also known as Candlestick).
+#[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
+pub struct KlineStructure {
+    /// 交易所時間戳
+    #[builder(setter(into))]
+    pub exchange_timestamp: TimestampField,
 
-/// Get the ordered fixed array with k-line indicators.
-///
-/// The indicators will be ordered in `[open, high, low, close, volume]`.
-fn get_kline_indi_array(kline: &KlineMsg) -> [f64; 5] {
-    [kline.open, kline.high, kline.low, kline.close, kline.volume]
+    /// 收到時間戳
+    #[builder(default)]
+    pub received_timestamp: TimestampField,
+
+    /// 交易所類型 (EXCHANGE)
+    #[builder(setter(into))]
+    pub exchange_type: ExchangeTypeField,
+
+    /// 市場類型 (MARKET_TYPE)
+    #[builder(setter(into))]
+    pub market_type: MarketTypeField,
+
+    /// 訊息類型 (MESSAGE_TYPE)
+    #[builder(setter(into))]
+    pub message_type: MessageTypeField,
+
+    /// SYMBOL
+    pub symbol: SymbolPairField,
+
+    /// PERIOD
+    #[builder(setter(into))]
+    pub period: PeriodField,
+
+    /// K 線指標
+    pub indicator: KlineIndicatorsField,
+
+    /// 資料結尾
+    #[builder(default)]
+    pub end: EndOfDataFlag,
 }
 
-/// Encode a [`KlineMsg`] to bytes.
-pub fn encode_kline(kline: &KlineMsg) -> KlineResult<Vec<u8>> {
-    // This data should have 47 bytes.
-    let mut bytes = Vec::<u8>::with_capacity(47);
+impl StructSerializer for KlineStructure {
+    type Err = KlineError;
 
-    // 1. 交易所时间戳: 6 字节
-    bytes.extend_from_slice(&ExchangeTimestampRepr(kline.timestamp).to_bytes());
+    fn serialize(&self, writer: &mut impl std::io::Write) -> Result<(), Self::Err> {
+        serialize_block_builder!(
+            self.exchange_timestamp,
+            self.received_timestamp,
+            self.exchange_type,
+            self.market_type,
+            self.message_type,
+            self.symbol,
+            self.period,
+            self.indicator,
+            self.end
+            => writer
+        );
 
-    // 2. 收到时间戳: 6 字节
-    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
-
-    // 3. EXCHANGE: 1 字节
-    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&kline.exchange)?.to_bytes());
-
-    // 4. MARKET_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MarketTypeRepr(kline.market_type).to_bytes());
-
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MessageTypeRepr(kline.msg_type).to_bytes());
-
-    // 6. SYMBOL: 2 字节信息标识
-    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&kline.pair).to_bytes());
-
-    // 7. PERIOD: 1 字节信息标识
-    bytes.extend_from_slice(&PeriodRepr(kline.period.as_str()).try_to_bytes()?);
-
-    // 8. 五個指標 (open (5B), high (5B), low (5B), close (5B)、volume (10B))
-    for (idx, price) in get_kline_indi_array(kline).iter().enumerate() {
-        // FIXME: this code is too ugly!!
-        macro_rules! create_extend_branch {
-            ($ty:ty) => {
-                bytes.extend_from_slice(&<$ty>::encode_bytes(&price.to_string())?)
-            };
-        }
-
-        let size = KLINE_INDICATOR_SIZE[idx];
-
-        match size {
-            5 => create_extend_branch!(u32),
-            10 => create_extend_branch!(u64),
-            _ => unreachable!(),
-        };
+        Ok(())
     }
-
-    Ok(bytes)
 }
 
-/// Decode the specified bytes to a [`KlineMsg`].
-pub fn decode_kline(payload: &[u8]) -> KlineResult<KlineMsg> {
-    let mut reader = BufReader::new(payload);
+impl StructDeserializer for KlineStructure {
+    type Err = KlineError;
 
-    // 1. 交易所时间戳: 6 字节时间戳
-    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
-
-    // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
-
-    // 3. EXCHANGE: 1 字节信息标识
-    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
-
-    // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
-
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
-
-    // 6. SYMBOL_PAIR: 2 字节信息标识
-    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
-
-    // 7. PERIOD: 1 字节信息标识
-    let period = PeriodRepr::try_from_reader(&mut reader)?.0;
-
-    // 8. 五個指標 (open (5B), high (5B), low (5B), close (5B)、volume (10B))
-    let mut indicators = [0.0f64; 5];
-    for (idx, size) in KLINE_INDICATOR_SIZE.iter().enumerate() {
-        // FIXME: this code is too ugly!!
-        macro_rules! get_indicators_branch {
-            ($ty: ty) => {{
-                let raw = reader.read_exact_array()?;
-                let indicator = <$ty>::decode_bytes(&raw)
-                    .to_f64()
-                    .ok_or_else(|| KlineError::DecimalConvertF64Failed(raw.to_vec()))?;
-
-                indicator
-            }};
-        }
-
-        indicators[idx] = match *size {
-            5 => get_indicators_branch!(u32),
-            10 => get_indicators_branch!(u64),
-            _ => unreachable!(),
-        };
+    fn deserialize(reader: &mut impl std::io::Read) -> Result<Self, Self::Err> {
+        deserialize_block_builder!(
+            reader =>
+            exchange_timestamp,
+            received_timestamp,
+            exchange_type,
+            market_type,
+            message_type,
+            symbol,
+            period,
+            indicator,
+            end
+        )
     }
-    let [open, high, low, close, volume] = indicators;
+}
 
-    Ok(KlineMsg {
-        exchange: exchange_type.to_string(),
-        market_type,
-        msg_type,
-        pair: pair.to_string(),
-        symbol: symbol.to_string(),
-        timestamp: exchange_timestamp as i64,
-        open,
-        high,
-        low,
-        close,
-        /// base volume
-        volume,
-        /// m, minute; H, hour; D, day; W, week; M, month; Y, year
-        period: period.to_string(),
-        /// quote volume
-        quote_volume: None,
-        json: String::new(),
-    })
+impl TryFrom<KlineMsg> for KlineStructure {
+    type Error = KlineError;
+
+    fn try_from(value: KlineMsg) -> Result<Self, Self::Error> {
+        Ok(Self::builder()
+            .exchange_timestamp(value.timestamp)
+            .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
+            .market_type(value.market_type)
+            .message_type(value.msg_type)
+            .symbol(SymbolPairField::from_pair(&value.pair))
+            .period(value.period)
+            .indicator(KlineIndicatorsField::builder()
+                .open(value.open)
+                .high(value.high)
+                .low(value.low)
+                .close(value.close)
+                .volume(value.volume)
+                .build()
+            )
+            .build())
+    }
+}
+
+impl TryFrom<KlineStructure> for KlineMsg {
+    type Error = KlineError;
+
+    fn try_from(value: KlineStructure) -> Result<Self, Self::Error> {
+        let SymbolPairField { symbol, pair } = value.symbol;
+
+        Ok(Self {
+            exchange: value.exchange_type.into(),
+            market_type: value.market_type.into(),
+            symbol: symbol.to_string(),
+            pair,
+            msg_type: value.message_type.into(),
+            timestamp: value.exchange_timestamp.into(),
+            json: String::new(),
+            open: value.indicator.open.try_into()?,
+            high: value.indicator.high.try_into()?,
+            low: value.indicator.low.try_into()?,
+            close: value.indicator.close.try_into()?,
+            volume: value.indicator.volume.try_into()?,
+            period: value.period.into(),
+            quote_volume: None,
+        })
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum KlineError {
-    #[error("data/hex error: {0}")]
-    HexDataError(#[from] HexDataError),
+    #[error("field error: {0}")]
+    FieldError(#[from] FieldError),
 
-    #[error("structure error: {0}")]
-    StructureError(#[from] StructureError),
-
-    #[error("failed to convert the following bytes to f64: {0:?}")]
-    DecimalConvertF64Failed(Vec<u8>),
+    #[error("I/O reader/writer error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 pub type KlineResult<T> = Result<T, KlineError>;
