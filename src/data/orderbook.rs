@@ -1,21 +1,20 @@
 //! The orderbook-related operations.
 
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader},
-};
+use std::io::{Read, Write};
 
-use crypto_message::{Order, OrderBookMsg};
-use rust_decimal::prelude::ToPrimitive;
+pub use crypto_message::{Order, OrderBookMsg};
+use typed_builder::TypedBuilder;
 
 use super::{
     fields::{
-        ExchangeTimestampRepr, ExchangeTypeRepr, InfoTypeRepr, MarketTypeRepr, MessageTypeRepr,
-        ReadExt, ReceivedTimestampRepr, StructureError, SymbolPairRepr,
+        info_type::InfoType, EndOfDataFlag, ExchangeTypeField, FieldError, InfoTypeField,
+        MarketTypeField, MessageTypeField, PriceDataField, SymbolPairField, TimestampField,
     },
-    hex::{HexDataError, NumToBytesExt},
     order::{get_orders, OrderType},
-    types::InfoType,
+    serializer::{
+        serialize_block_builder, FieldDeserializer, FieldSerializer, StructDeserializer,
+        StructSerializer,
+    },
 };
 
 pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg {
@@ -38,164 +37,243 @@ pub fn generate_diff(old: &OrderBookMsg, latest: &OrderBookMsg) -> OrderBookMsg 
     }
 }
 
-/// Encode a [`OrderBookMsg`] to bytes.
-pub fn encode_orderbook(orderbook: &OrderBookMsg) -> OrderbookResult<Vec<u8>> {
-    // This data should have "at least" 21 bytes.
-    let mut bytes = Vec::<u8>::with_capacity(21);
+/// The box storing the direction and the orders.
+///
+/// This type is designed especially for the [`OrderbookStructure`].
+/// As its size is variant, we don't implement it as a [`Field`](super::fields::Field),
+/// and its serialization and deserialization method need to be written manually.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, TypedBuilder)]
+pub struct OrdersBox {
+    #[builder(setter(into))]
+    direction: InfoTypeField,
 
-    // 1. 交易所时间戳: 6 字节
-    bytes.extend_from_slice(&ExchangeTimestampRepr(orderbook.timestamp).to_bytes());
-
-    // 2. 收到时间戳: 6 字节
-    bytes.extend_from_slice(&ReceivedTimestampRepr::try_new_from_now()?.to_bytes());
-
-    // 3. EXCHANGE: 1 字节
-    bytes.extend_from_slice(&ExchangeTypeRepr::try_from_str(&orderbook.exchange)?.to_bytes());
-
-    // 4. MARKET_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MarketTypeRepr(orderbook.market_type).to_bytes());
-
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    bytes.extend_from_slice(&MessageTypeRepr(orderbook.msg_type).to_bytes());
-
-    // 6. SYMBOL: 2 字节信息标识
-    bytes.extend_from_slice(&SymbolPairRepr::from_pair(&orderbook.pair).to_bytes());
-
-    // 7. ask & bid
-    {
-        let markets = {
-            let mut markets = HashMap::new();
-
-            markets.insert("asks", &orderbook.asks);
-            markets.insert("bids", &orderbook.bids);
-
-            markets
-        };
-
-        for (k, order_list) in markets {
-            // 7-1. 字节信息标识
-            bytes.extend_from_slice(&{ InfoTypeRepr::try_from_str(k)?.to_bytes() });
-
-            // 7-2. 字节信息体的长度
-            bytes.extend_from_slice(&{
-                let list_len = (order_list.len() * 10) as u16;
-                list_len.to_be_bytes()
-            });
-
-            // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
-            for order in order_list {
-                bytes.extend_from_slice(&u32::encode_bytes(&order.price.to_string())?);
-                bytes.extend_from_slice(&u32::encode_bytes(&order.quantity_base.to_string())?);
-            }
-        }
-    }
-
-    // let compressed = compress_to_vec(&bytes, 6);
-    // println!("compressed from {} to {}", data.len(), compressed.len());
-    Ok(bytes)
+    orders: Vec<PriceDataField>,
 }
 
-/// Decode the specified bytes to a [`OrderBookMsg`].
-pub fn decode_orderbook(payload: &[u8]) -> OrderbookResult<OrderBookMsg> {
-    let mut reader = BufReader::new(payload);
+impl OrdersBox {
+    /// Calculate the size of `orders`
+    /// according to its length.
+    ///
+    /// As a PriceDataField occupied 10 bytes,
+    /// we calculate the size with:
+    ///
+    /// ```plain
+    /// L = The length of Vec<PriceDataField> × 10 bytes
+    /// ```
+    fn get_orders_size(length: usize) -> usize {
+        length * 10
+    }
 
-    // 1. 交易所时间戳: 6 字节时间戳
-    let exchange_timestamp = ExchangeTimestampRepr::try_from_reader(&mut reader)?.0;
+    /// Calculate the length of `orders`
+    /// according to its size.
+    fn get_orders_length(size: usize) -> usize {
+        size / 10
+    }
 
-    // 2. 收到时间戳: 6 字节时间戳 (NOT USED)
-    ReceivedTimestampRepr::try_from_reader(&mut reader)?;
+    fn serialize_orders_size(length: usize) -> [u8; 2] {
+        (Self::get_orders_size(length) as u16).to_be_bytes()
+    }
 
-    // 3. EXCHANGE: 1 字节信息标识
-    let exchange_type = ExchangeTypeRepr::try_from_reader(&mut reader)?.0;
+    fn deserialize_orders_size(src: &[u8; 2]) -> usize {
+        Self::get_orders_length(u16::from_be_bytes(*src).into())
+    }
+}
 
-    // 4. MARKET_TYPE: 1 字节信息标识
-    let market_type = MarketTypeRepr::try_from_reader(&mut reader)?.0;
+impl OrdersBox {
+    /// Serialize the input and write the whole serialized
+    /// content to the writer.
+    pub fn serialize_to_writer(&self, writer: &mut impl Write) -> OrderbookResult<()> {
+        /* Direction */
+        self.direction.serialize_to_writer(writer)??;
 
-    // 5. MESSAGE_TYPE: 1 字节信息标识
-    let msg_type = MessageTypeRepr::try_from_reader(&mut reader)?.0;
+        /* Orders's size */
+        writer.write_all(&Self::serialize_orders_size(self.orders.len()))?;
 
-    // 6. SYMBOL_PAIR: 2 字节信息标识
-    let SymbolPairRepr(symbol, pair) = SymbolPairRepr::try_from_reader(&mut reader)?;
-
-    // 7. ask & bid
-    let (asks, bids) = {
-        let mut asks: Vec<Order> = Vec::new();
-        let mut bids: Vec<Order> = Vec::new();
-
-        // Check if the data has left.
-        //
-        // TODO: when `has_data_left` provided, replace the following
-        // to 'reader.has_data_left()`!
-        while reader.fill_buf().map(|b| !b.is_empty()).unwrap_or(false) {
-            // 7-1. 字节信息标识
-            let info_type = InfoTypeRepr::try_from_reader(&mut reader)?.0;
-
-            // 7-2. 字节信息体的长度
-            let info_len = {
-                let data = reader.read_exact_array()?;
-                let info_len_raw = u16::from_be_bytes(data);
-                info_len_raw / 10 // 每 10 bits 為一個資料單位
-            };
-
-            // 7-3: data(price(5)、quant(5)) 10*dataLen BYTE[10*dataLen] 信息体
-            for _ in 0..info_len {
-                let price = {
-                    let raw_bytes = reader.read_exact_array()?;
-                    u32::decode_bytes(&raw_bytes).to_f64().ok_or_else(|| {
-                        OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
-                    })?
-                };
-
-                let quantity_base = {
-                    let raw_bytes = reader.read_exact_array()?;
-                    u32::decode_bytes(&raw_bytes).to_f64().ok_or_else(|| {
-                        OrderbookError::DecimalConvertF64Failed(raw_bytes.to_vec())
-                    })?
-                };
-
-                let order = Order {
-                    price,
-                    quantity_base,
-                    quantity_quote: 0.0,
-                    quantity_contract: None,
-                };
-
-                match info_type {
-                    InfoType::Asks => asks.push(order),
-                    InfoType::Bids => bids.push(order),
-                }
-            }
+        /* Orders */
+        for order in &self.orders {
+            order.serialize_to_writer(writer)??;
         }
 
-        (asks, bids)
-    };
+        Ok(())
+    }
+}
 
-    Ok(OrderBookMsg {
-        exchange: exchange_type.to_string(),
-        market_type,
-        symbol: symbol.to_string(),
-        pair: pair.to_string(),
-        msg_type,
-        timestamp: exchange_timestamp,
-        seq_id: None,
-        prev_seq_id: None,
-        asks,
-        bids,
-        snapshot: true,
-        json: String::new(),
-    })
+impl OrdersBox {
+    /// Read from the writer, and deserialize it.
+    pub fn deserialize_from_reader(reader: &mut impl Read) -> OrderbookResult<Self> {
+        /* Direction */
+        let direction = InfoTypeField::deserialize_from_reader(reader)??;
+
+        /* Orders's size */
+        let mut size_buf = [0u8; 2];
+        reader.read_exact(&mut size_buf)?;
+        let order_len = Self::deserialize_orders_size(&size_buf);
+
+        /* Orders */
+        let mut orders = Vec::with_capacity(order_len);
+
+        for _ in 0..order_len {
+            let order = PriceDataField::deserialize_from_reader(reader)??;
+            orders.push(order);
+        }
+
+        Ok(Self { direction, orders })
+    }
+}
+
+/// The structure of a order book.
+///
+/// You can take advantage of `builder()`
+/// to construct some fields automatically.
+#[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
+pub struct OrderbookStructure {
+    /// 交易所時間戳
+    #[builder(setter(into))]
+    pub exchange_timestamp: TimestampField,
+
+    /// 收到時間戳
+    #[builder(default)]
+    pub received_timestamp: TimestampField,
+
+    /// 交易所類型 (EXCHANGE)
+    #[builder(setter(into))]
+    pub exchange_type: ExchangeTypeField,
+
+    /// 市場類型 (MARKET_TYPE)
+    #[builder(setter(into))]
+    pub market_type: MarketTypeField,
+
+    /// 訊息類型 (MESSAGE_TYPE)
+    #[builder(setter(into))]
+    pub message_type: MessageTypeField,
+
+    /// SYMBOL
+    pub symbol: SymbolPairField,
+
+    /// 賣方 (asks) 的資料
+    pub asks: OrdersBox,
+
+    /// 買方 (bids) 的資料
+    pub bids: OrdersBox,
+
+    /// 資料結尾
+    #[builder(default)]
+    pub end: EndOfDataFlag,
+}
+
+impl StructSerializer for OrderbookStructure {
+    type Err = OrderbookError;
+
+    fn serialize(&self, writer: &mut impl Write) -> Result<(), Self::Err> {
+        serialize_block_builder!(
+            self.exchange_timestamp,
+            self.received_timestamp,
+            self.exchange_type,
+            self.market_type,
+            self.message_type,
+            self.symbol
+            => writer
+        );
+
+        // OrdersBox is not a standard FieldSerializer.
+        self.asks.serialize_to_writer(writer)?;
+        self.bids.serialize_to_writer(writer)?;
+
+        self.end.serialize_to_writer(writer)??;
+
+        Ok(())
+    }
+}
+
+impl StructDeserializer for OrderbookStructure {
+    type Err = OrderbookError;
+
+    fn deserialize(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        let exchange_timestamp = TimestampField::deserialize_from_reader(reader)??;
+        let received_timestamp = TimestampField::deserialize_from_reader(reader)??;
+        let exchange_type = ExchangeTypeField::deserialize_from_reader(reader)??;
+        let market_type = MarketTypeField::deserialize_from_reader(reader)??;
+        let message_type = MessageTypeField::deserialize_from_reader(reader)??;
+        let symbol = SymbolPairField::deserialize_from_reader(reader)??;
+
+        // OrdersBox is not a standard FieldDeserializer.
+        let asks = OrdersBox::deserialize_from_reader(reader)?;
+        let bids = OrdersBox::deserialize_from_reader(reader)?;
+
+        let end = EndOfDataFlag::deserialize_from_reader(reader)??;
+
+        Ok(Self {
+            exchange_timestamp,
+            received_timestamp,
+            exchange_type,
+            market_type,
+            message_type,
+            symbol,
+            asks,
+            bids,
+            end,
+        })
+    }
+}
+
+impl TryFrom<OrderBookMsg> for OrderbookStructure {
+    type Error = OrderbookError;
+
+    fn try_from(value: OrderBookMsg) -> Result<Self, Self::Error> {
+        Ok(Self::builder()
+            .exchange_timestamp(value.timestamp)
+            .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
+            .market_type(value.market_type)
+            .message_type(value.msg_type)
+            .symbol(SymbolPairField::from_pair(&value.pair))
+            .asks(
+                OrdersBox::builder()
+                    .direction(InfoType::Asks)
+                    .orders(value.asks.into_iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .build(),
+            )
+            .bids(
+                OrdersBox::builder()
+                    .direction(InfoType::Bids)
+                    .orders(value.bids.into_iter().map(TryInto::try_into).collect::<Result<Vec<PriceDataField>, _>>()?)
+                    .build(),
+            )
+            .build())
+    }
+}
+
+impl TryFrom<OrderbookStructure> for OrderBookMsg {
+    type Error = OrderbookError;
+
+    fn try_from(value: OrderbookStructure) -> Result<Self, Self::Error> {
+        let SymbolPairField { symbol, pair } = value.symbol;
+        let asks = value.asks.orders.into_iter().map(TryInto::try_into).collect::<Result<Vec<Order>, _>>()?;
+        let bids = value.bids.orders.into_iter().map(TryInto::try_into).collect::<Result<Vec<Order>, _>>()?;
+
+        Ok(Self {
+            exchange: value.exchange_type.into(),
+            market_type: value.market_type.into(),
+            symbol: symbol.to_string(),
+            pair,
+            msg_type: value.message_type.into(),
+            timestamp: value.exchange_timestamp.into(),
+            snapshot: true,
+            asks,
+            bids,
+            seq_id: None,
+            prev_seq_id: None,
+            json: String::new()
+        })
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum OrderbookError {
-    #[error("data/hex error: {0}")]
-    HexDataError(#[from] HexDataError),
+    #[error("field error: {0}")]
+    FieldError(#[from] FieldError),
 
-    #[error("structure error: {0}")]
-    StructureError(#[from] StructureError),
-
-    #[error("failed to convert the following bytes to f64: {0:?}")]
-    DecimalConvertF64Failed(Vec<u8>),
+    #[error("I/O reader/writer error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 pub type OrderbookResult<T> = Result<T, OrderbookError>;

@@ -6,8 +6,8 @@
 pub mod num;
 pub mod serializer;
 
-// #[cfg(feature = "crypto")]
-// pub mod orderbook;
+#[cfg(feature = "crypto")]
+pub mod orderbook;
 
 #[cfg(feature = "crypto")]
 pub mod fields;
