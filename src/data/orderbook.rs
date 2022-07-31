@@ -2,7 +2,9 @@
 
 use std::io::{Read, Write};
 
-pub use crypto_message::{Order, OrderBookMsg};
+pub use crypto_message::OrderBookMsg;
+use super::fields::price_data::Order;
+
 use typed_builder::TypedBuilder;
 
 use super::{
