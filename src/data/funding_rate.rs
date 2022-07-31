@@ -26,6 +26,7 @@ pub type EstimatedRateField = DecimalField<10>;
 #[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
 pub struct FundingRateStructure {
     /// 交易所時間戳
+    #[builder(setter(into))]
     pub exchange_timestamp: TimestampField,
 
     /// 收到時間戳
@@ -33,24 +34,30 @@ pub struct FundingRateStructure {
     pub received_timestamp: TimestampField,
 
     /// 交易所類型 (EXCHANGE)
+    #[builder(setter(into))]
     pub exchange_type: ExchangeTypeField,
 
     /// 市場類型 (MARKET_TYPE)
+    #[builder(setter(into))]
     pub market_type: MarketTypeField,
 
     /// 訊息類型 (MESSAGE_TYPE)
+    #[builder(setter(into))]
     pub message_type: MessageTypeField,
 
     /// SYMBOL
     pub symbol: SymbolPairField,
 
     /// Funding rate
+    #[builder(setter(into))]
     pub funding_rate: FundingRateField,
 
     /// Funding time
+    #[builder(setter(into))]
     pub funding_time: TimestampField,
 
     /// Estimated rate
+    #[builder(setter(into))]
     pub estimated_rate: EstimatedRateField,
 
     /// 資料結尾
@@ -105,17 +112,17 @@ impl TryFrom<&FundingRateMsg> for FundingRateStructure {
 
     fn try_from(msg: &FundingRateMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
-            .exchange_timestamp(TimestampField(msg.timestamp as u64))
+            .exchange_timestamp(msg.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&msg.exchange)?)
-            .market_type(MarketTypeField(msg.market_type))
-            .message_type(MessageTypeField(msg.msg_type))
+            .market_type(msg.market_type)
+            .message_type(msg.msg_type)
             .symbol(SymbolPairField::from_pair(&msg.pair))
-            .funding_rate(FundingRateField::from(msg.funding_rate))
-            .funding_time(TimestampField(msg.funding_time as u64))
-            .estimated_rate(EstimatedRateField::from(
+            .funding_rate(msg.funding_rate)
+            .funding_time(msg.funding_time)
+            .estimated_rate(
                 msg.estimated_rate
                     .ok_or(FundingRateError::MissingEstimatedRate)?,
-            ))
+            )
             .build())
     }
 }
@@ -127,15 +134,15 @@ impl TryFrom<FundingRateStructure> for FundingRateMsg {
         let SymbolPairField { symbol, pair } = s.symbol;
 
         Ok(Self {
-            exchange: s.exchange_type.0.to_string(),
-            market_type: s.market_type.0,
+            exchange: s.exchange_type.into(),
+            market_type: s.market_type.into(),
             symbol: symbol.to_string(),
             pair,
-            msg_type: s.message_type.0,
-            timestamp: s.exchange_timestamp.0 as i64,
-            funding_rate: s.funding_rate.0.to_f64().expect("overflow?"),
-            funding_time: s.funding_time.0 as i64,
-            estimated_rate: s.estimated_rate.0.to_f64(),
+            msg_type: s.message_type.into(),
+            timestamp: s.exchange_timestamp.into(),
+            funding_rate: s.funding_rate.to_f64().expect("overflow?"),
+            funding_time: s.funding_time.into(),
+            estimated_rate: s.estimated_rate.to_f64(),
             json: String::new(),
         })
     }

@@ -29,6 +29,7 @@ use super::{
 #[derive(Clone, Debug, PartialEq, Eq, TypedBuilder)]
 pub struct BboStructure {
     /// 交易所時間戳
+    #[builder(setter(into))]
     pub exchange_timestamp: TimestampField,
 
     /// 收到時間戳
@@ -36,12 +37,15 @@ pub struct BboStructure {
     pub received_timestamp: TimestampField,
 
     /// 交易所類型 (EXCHANGE)
+    #[builder(setter(into))]
     pub exchange_type: ExchangeTypeField,
 
     /// 市場類型 (MARKET_TYPE)
+    #[builder(setter(into))]
     pub market_type: MarketTypeField,
 
     /// 訊息類型 (MESSAGE_TYPE)
+    #[builder(setter(into))]
     pub message_type: MessageTypeField,
 
     /// SYMBOL
@@ -102,10 +106,10 @@ impl TryFrom<&BboMsg> for BboStructure {
 
     fn try_from(value: &BboMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
-            .exchange_timestamp(TimestampField(value.timestamp as u64))
+            .exchange_timestamp(value.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
-            .market_type(MarketTypeField(value.market_type))
-            .message_type(MessageTypeField(value.msg_type))
+            .market_type(value.market_type)
+            .message_type(value.msg_type)
             .symbol(SymbolPairField::from_pair(&value.pair))
             .asks(
                 PriceDataField::builder()
@@ -130,18 +134,18 @@ impl TryFrom<BboStructure> for BboMsg {
         let SymbolPairField { symbol, pair } = value.symbol;
 
         Ok(Self {
-            exchange: value.exchange_type.0.to_string(),
-            market_type: value.market_type.0,
-            msg_type: value.message_type.0,
+            exchange: value.exchange_type.into(),
+            market_type: value.market_type.into(),
+            msg_type: value.message_type.into(),
             pair,
             symbol: symbol.to_string(),
-            timestamp: value.exchange_timestamp.0 as i64,
-            ask_price: value.asks.price.0.to_f64().expect("overflow?"),
-            ask_quantity_base: value.asks.quantity_base.0.to_f64().expect("overflow?"),
+            timestamp: value.exchange_timestamp.into(),
+            ask_price: value.asks.price.to_f64().expect("overflow?"),
+            ask_quantity_base: value.asks.quantity_base.to_f64().expect("overflow?"),
             ask_quantity_quote: 0.0,
             ask_quantity_contract: None,
-            bid_price: value.bids.price.0.to_f64().expect("overflow?"),
-            bid_quantity_base: value.bids.quantity_base.0.to_f64().expect("overflow?"),
+            bid_price: value.bids.price.to_f64().expect("overflow?"),
+            bid_quantity_base: value.bids.quantity_base.to_f64().expect("overflow?"),
             bid_quantity_quote: 0.0,
             bid_quantity_contract: None,
             id: None,
