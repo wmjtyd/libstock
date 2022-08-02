@@ -60,3 +60,52 @@ pub enum NanomsgError {
 
 /// The result type of [`Nanomsg`](self).
 pub type NanomsgResult<T> = Result<T, NanomsgError>;
+
+#[cfg(test)]
+mod tests {
+    use crate as wmjtyd_libstock;
+
+    mod changelog_0_4_0 {
+        use super::*;
+
+        /**
+        API in old days:
+
+        ```compile_fail
+        use std::io::Write;
+        use wmjtyd_libstock::message::nanomsg::{Nanomsg, NanomsgProtocol};
+
+        let nanomsg = Nanomsg::new("ipc:///tmp/cl-nanomsg-old-api-w.ipc", NanomsgProtocol::Pub);
+
+        if let Ok(mut nanomsg) = nanomsg {
+            nanomsg.write_all(b"Hello World!").ok();
+        }
+        ```
+        */
+        #[test]
+        fn migrate_to_new_api_write() {
+            use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+            use wmjtyd_libstock::message::traits::{Bind, Write};
+
+            let nanomsg = NanomsgPublisher::new();
+
+            if let Ok(mut nanomsg) = nanomsg {
+                nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w.ipc").ok();
+                nanomsg.write_all(b"Hello World!").ok();
+            }
+        }
+
+        #[tokio::test]
+        async fn migrate_to_new_api_write_async() {
+            use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+            use wmjtyd_libstock::message::traits::{Bind, AsyncWriteExt};
+
+            let nanomsg = NanomsgPublisher::new();
+
+            if let Ok(mut nanomsg) = nanomsg {
+                nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w.ipc").ok();
+                nanomsg.write_all(b"Hello World!").await.ok();
+            }
+        }
+    }
+}

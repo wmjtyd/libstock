@@ -147,8 +147,122 @@ Some notable big changes to migrate your codebase:
 - `SymbolPairField` is no longer a tuple – its fields has been named now.
 - `ReadExt` has been merged to `Deserializer`.
 
+#### `message`
+
+Though we reshaped and rewrote all the message modules,
+there is not really big changes for users.
+
+**Migrate `nanomsg` writers**
+
+Assuming you used to have such a code:
+
+```rs
+use std::io::Write;
+use wmjtyd_libstock::message::nanomsg::{Nanomsg, NanomsgProtocol};
+
+let nanomsg = Nanomsg::new("ipc:///tmp/cl-nanomsg-old-api-w.ipc", NanomsgProtocol::Pub);
+
+if let Ok(mut nanomsg) = nanomsg {
+    nanomsg.write_all(b"Hello World!").ok();
+}
+```
+
+First, update your `Nanomsg` import to `NanomsgPublisher`.
+We have separated `Nanomsg` to `NanomsgPublisher` and `NanomsgSubscriber`,
+which implementing the corresponding `Publisher` and `Subscriber`:
+
+```rs
+use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+```
+
+And then, construct your `NanomsgPublisher`. **Note that no any
+additional parameter will pass it this construction**, and we
+will bind our address later.
+
+```rs
+let nanomsg = NanomsgPublisher::new();
+```
+
+`new()` returns `Result`, so error handling is needed here.
+After that, let's bind our address to Nanomsg:
+
+```rs
+use wmjtyd_libstock::message::traits::Bind;
+
+if let Ok(mut nanomsg) = nanomsg {
+    nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w.ipc").ok();
+```
+
+Note that we includes `traits::Bind` here. To use the `bind`
+method, you *must* introduce our `Bind` trait here. It is
+necessary for our high-level abstraction. Finally, we introduce
+`Write` trait, just like what we did before.
+
+```rs
+use std::io::Write;  // or use wmjtyd_libstock::message::traits::Write;
+    nanomsg.write_all(b"Hello World!").ok();
+}
+```
+
+Besides, we provide the async API of `nanomsg` now!
+
+```rs
+use tokio::io::AsyncWriteExt;  // or use wmjtyd_libstock::message::traits::AsyncWriteExt;
+    nanomsg.write_all(b"Hello World!").await.ok();
+}
+```
+
+The full example:
+
+```rs
+use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+use wmjtyd_libstock::message::traits::{Bind, Write};
+
+let nanomsg = NanomsgPublisher::new();
+
+if let Ok(mut nanomsg) = nanomsg {
+    nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w.ipc").ok();
+    nanomsg.write_all(b"Hello World!").ok();
+}
+```
+
+**Migrate `zeromq` writers**
+
+Just like `nanomsg`, but use `zeromq::ZeromqPublisher`. Example:
+
+```rs
+use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
+use wmjtyd_libstock::message::traits::{Bind, Write};
+
+let zeromq = ZeromqPublisher::new();
+
+if let Ok(mut zeromq) = zeromq {
+    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w.ipc").ok();
+    zeromq.write_all(b"Hello World!").ok();
+}
+```
+
+**Migrate `nanomsg` readers**
+
+*WIP*. Really similar to what we did in writers.
+Example of this new API:
+
+```rs
+
+```
+
+**Migrate `zeromq` readers**
+
+*WIP*. All of the APIs are followed our new rule and
+thus the logic is just the same. Example of this new API:
+
+```rs
+
+```
+
 ### 0.4.0 – Breaking Changes
 
+- `message` has been largely rewritten.
 - Methods under `data` module are mostly reshaped. You may need to
   rewrite your code to adapt this new architectiure.
   - We have abstracted a `Structure` – To serialize your

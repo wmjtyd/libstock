@@ -56,3 +56,26 @@ pub enum ZeromqError {
 
 /// The result type of [`Zeromq`](self).
 pub type ZeromqResult<T> = Result<T, ZeromqError>;
+
+
+#[cfg(test)]
+mod tests {
+    use crate as wmjtyd_libstock;
+
+    mod changelog_0_4_0 {
+        use super::*;
+
+        #[test]
+        fn migrate_to_new_api_write() {
+            use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
+            use wmjtyd_libstock::message::traits::{Bind, Write};
+            
+            let zeromq = ZeromqPublisher::new();
+            
+            if let Ok(mut zeromq) = zeromq {
+                zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w.ipc").ok();
+                zeromq.write_all(b"Hello World!").ok();
+            }
+        }
+    }
+}
