@@ -1,28 +1,19 @@
 //! The message exchange methods and utilities.
 
-use std::io::Read;
+pub mod traits;
 
-#[cfg(feature = "nanomsg")]
-pub mod nanomsg;
+// #[cfg(feature = "nanomsg")]
+// pub mod nanomsg;
 
 #[cfg(feature = "zeromq")]
 pub mod zeromq;
 
-/// The trait for implementing the subscriber of a topic.
-pub trait Subscribe: Read {
-    /// The return value of `subscribe()`
-    type Result;
+use self::zeromq::ZeromqError;
 
-    /// Subscribe a topic.
-    fn subscribe(&mut self, topic: &str) -> Self::Result;
+#[derive(thiserror::Error, Debug)]
+pub enum MessageError {
+    #[error("ZeroMQ error: {0}")]
+    ZeromqError(#[from] ZeromqError),
 }
 
-/// The trait for implementing the subscriber of a topic.
-#[async_trait::async_trait]
-pub trait AsyncSubscribe: tokio::io::AsyncRead {
-    /// The return value of `subscribe()`
-    type Result;
-
-    /// Subscribe a topic.
-    async fn subscribe(&mut self, topic: &str) -> Self::Result;
-}
+pub type MessageResult<T> = Result<T, MessageError>;

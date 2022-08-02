@@ -6,8 +6,6 @@ use std::ops::{Deref, DerefMut};
 use nanomsg::Socket;
 pub use nanomsg::{Error as MessageError, Protocol as NanomsgProtocol, Result as MessageResult};
 
-use super::Subscribe;
-
 /// A basic encap of [`Socket`] for subscribing and publishing.
 ///
 /// It will automatically bind the created socket to the specified path.
@@ -125,6 +123,7 @@ impl Write for Nanomsg {
         self.socket.flush()
     }
 }
+
 
 impl Subscribe for Nanomsg {
     type Result = MessageResult<()>;
