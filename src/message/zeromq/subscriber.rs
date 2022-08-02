@@ -1,17 +1,17 @@
 use std::task::Poll;
 
-use crate::message::traits::{AsyncRead, Stream};
-use crate::message::MessageResult;
-
-use crate::message::traits::AsyncSubscriber;
-use crate::message::zeromq::ZeromqError;
-use crate::message::MessageError;
-
-use crate::message::traits::Read;
-
-use crate::message::traits::{Connect, Subscriber, SyncSubscriber};
-
 use super::common::construct_zeromq;
+use crate::message::traits::{
+    AsyncRead,
+    AsyncSubscriber,
+    Connect,
+    Read,
+    Stream,
+    Subscriber,
+    SyncSubscriber,
+};
+use crate::message::zeromq::ZeromqError;
+use crate::message::{MessageError, MessageResult};
 
 construct_zeromq!(
     name = ZeromqSubscriber,
