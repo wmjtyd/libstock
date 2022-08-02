@@ -2,6 +2,7 @@
 
 mod common;
 mod subscriber;
+mod publisher;
 
 #[derive(thiserror::Error, Debug)]
 pub enum NanomsgError {
