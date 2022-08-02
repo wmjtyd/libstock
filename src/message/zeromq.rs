@@ -1,125 +1,58 @@
-//! A basic encap methods of [`zeromq`].
+//! A high-level abstracted ZeroMQ subscriber and
+//! publisher methods with [`zmq2`].
+//!
+//! Note that:
+//!
+//! - We return [`MessageError`](super::MessageError) instead of
+//!   [`ZeromqError`], to maintain the same error
+//!   type as the other implementations.
 
-use std::ops::{Deref, DerefMut};
-use std::task::Poll;
+mod common;
+mod publisher;
+mod subscriber;
 
-use tokio::io::{self, AsyncRead, AsyncWrite};
-pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
-use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
-pub use {PubSocket as Pub, SubSocket as Sub};
+pub use publisher::ZeromqPublisher;
+pub use subscriber::ZeromqSubscriber;
 
-use super::AsyncSubscribe;
+/// The errors of [`Zeromq`](self).
+#[derive(thiserror::Error, Debug)]
+pub enum ZeromqError {
+    /// When we failed to create a socket.
+    #[error("Unable to create socket: {0}")]
+    CreateSocketFailed(zmq2::Error),
 
-/// A basic encap of [`zeromq`] for subscribing and publishing.
-pub struct Zeromq<T> {
-    socket: T,
+    /// When we failed to connect to an address.
+    #[error("Failed to connect to an address: {0}")]
+    ConnectFailed(zmq2::Error),
+
+    /// When we failed to disconnect from an address.
+    #[error("Failed to disconnect from an address: {0}")]
+    DisconnectFailed(zmq2::Error),
+
+    /// When we failed to bind to an address.
+    #[error("Failed to bind to an address: {0}")]
+    BindFailed(zmq2::Error),
+
+    /// When we failed to unbind an address.
+    #[error("Failed to unbind from an address: {0}")]
+    UnbindFailed(zmq2::Error),
+
+    /// When the `recv()` operation (called by `read()` or whatever) failed.
+    #[error("Failed to receive: {0}")]
+    RecvFailed(zmq2::Error),
+
+    /// When the `send()` operation (called by `write()` or whatever) failed.
+    #[error("Failed to send: {0}")]
+    SendFailed(zmq2::Error),
+
+    /// When the `.set_subscribe()` operation failed.
+    #[error("Failed to subscribe: {0}")]
+    SubscribeFailed(zmq2::Error),
+
+    /// When the `.set_unsubscribe()` operation failed.
+    #[error("Failed to unsubscribe: {0}")]
+    UnsubscribeFailed(zmq2::Error),
 }
 
-impl Zeromq<PubSocket> {
-    pub async fn new(path: &str) -> ZmqResult<Self> {
-        let mut pub_socket = Zeromq {
-            socket: PubSocket::new(),
-        };
-        pub_socket.bind(path).await?;
-        // 空消息
-        pub_socket.send(ZmqMessage::from("")).await?;
-        Ok(pub_socket)
-    }
-}
-
-impl Zeromq<SubSocket> {
-    pub async fn new(path: &str) -> ZmqResult<Self> {
-        let mut sub_socket = Zeromq {
-            socket: SubSocket::new(),
-        };
-        sub_socket.connect(path).await?;
-        Ok(sub_socket)
-    }
-}
-
-impl<T> Deref for Zeromq<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.socket
-    }
-}
-
-impl<T> DerefMut for Zeromq<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.socket
-    }
-}
-
-impl AsyncRead for Zeromq<SubSocket> {
-    fn poll_read(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-        buf: &mut tokio::io::ReadBuf<'_>,
-    ) -> std::task::Poll<std::io::Result<()>> {
-        let mut response = self.socket.recv();
-
-        let data = response.as_mut().poll(cx);
-
-        match data {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Err(e)) => {
-                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
-            }
-            Poll::Ready(Ok(data)) => {
-                let data: Result<Vec<u8>, _> = data.try_into();
-
-                match data {
-                    Ok(data) => {
-                        buf.put_slice(&data);
-                        Poll::Ready(Ok(()))
-                    }
-                    Err(e) => Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string()))),
-                }
-            }
-        }
-    }
-}
-
-impl AsyncWrite for Zeromq<PubSocket> {
-    fn poll_write(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-        buf: &[u8],
-    ) -> Poll<Result<usize, std::io::Error>> {
-        let buf = buf.to_vec();
-        let buf_len = buf.len();
-        let mut task = self.socket.send(ZmqMessage::from(buf));
-
-        match task.as_mut().poll(cx) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Err(e)) => {
-                Poll::Ready(Err(io::Error::new(io::ErrorKind::Other, e.to_string())))
-            }
-            Poll::Ready(Ok(())) => Poll::Ready(Ok(buf_len)),
-        }
-    }
-
-    fn poll_flush(
-        self: std::pin::Pin<&mut Self>,
-        _: &mut std::task::Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        unimplemented!("Zeromq does not support flush.")
-    }
-
-    fn poll_shutdown(
-        self: std::pin::Pin<&mut Self>,
-        _: &mut std::task::Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        unimplemented!("Shutdown with `self.socket.close()`.")
-    }
-}
-
-#[async_trait::async_trait]
-impl AsyncSubscribe for Zeromq<SubSocket> {
-    type Result = ZmqResult<()>;
-
-    async fn subscribe(&mut self, topic: &str) -> Self::Result {
-        self.socket.subscribe(topic).await
-    }
-}
+/// The result type of [`Zeromq`](self).
+pub type ZeromqResult<T> = Result<T, ZeromqError>;
