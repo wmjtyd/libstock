@@ -161,7 +161,6 @@ mod tests {
         E: Debug,
         S: Connect<Err = E> + AsyncSubscriber<Err = E> + Subscribe<Err = E>,
     {
-        use futures::StreamExt;
         use tokio::io::AsyncReadExt;
 
         subscriber.connect(addr).expect("failed to connect");
@@ -169,22 +168,57 @@ mod tests {
 
         let mut subscriber = Box::pin(subscriber);
 
-        let response = subscriber.next().await;
-        // let mut buf = [0u8; 17];
-        // let message_size = subscriber.read(&mut buf).await.expect("failed to read");
+        let mut buf = [0u8; 17];
+        let message_size = subscriber.read(&mut buf).await.expect("failed to read");
 
-        assert_eq!(response.unwrap().unwrap(), b"TEST Hello, World");
-        // assert_eq!(
-        //     &buf,
-        //     b"TEST Hello, World"
-        // );
-        // assert_eq!(
-        //     message_size,
-        //     17
-        // )
+        assert_eq!(
+            &buf,
+            b"TEST Hello, World"
+        );
+        assert_eq!(
+            message_size,
+            17
+        )
+    }
+
+    async fn abstract_async_stream_function<E, S>(mut subscriber: S, addr: &str)
+    where
+        E: Debug,
+        S: Connect<Err = E> + AsyncSubscriber<Err = E> + Subscribe<Err = E>,
+    {
+        use futures::StreamExt;
+
+        subscriber.connect(addr).expect("failed to connect");
+        subscriber.subscribe(b"TEST").expect("failed to subscribe");
+
+        let mut subscriber = Box::pin(subscriber);
+
+        let response = subscriber.next().await
+            .expect("no data inside")
+            .expect("data receiving failed");
+
+        assert_eq!(response, b"TEST Hello, World");
     }
 
     fn abstract_read_function<S, E>(mut subscriber: S, addr: &str)
+    where
+        E: Debug,
+        S: Connect<Err = E> + SyncSubscriber<Err = E> + Subscribe<Err = E>,
+    {
+        subscriber.connect(addr).expect("failed to connect");
+        subscriber.subscribe(b"TEST").expect("failed to subscribe");
+
+        let mut buf = [0; 17];
+        subscriber.read_exact(&mut buf)
+            .expect("data retriving failed");
+
+        assert_eq!(
+            &buf[..],
+            b"TEST Hello, World"
+        );
+    }
+
+    fn abstract_iter_function<S, E>(mut subscriber: S, addr: &str)
     where
         E: Debug,
         S: Connect<Err = E> + SyncSubscriber<Err = E> + Subscribe<Err = E>,
@@ -199,68 +233,122 @@ mod tests {
         );
     }
 
+    macro_rules! build_test {
+        (
+            sync =>
+            func_name = $func_name:ident,
+            publisher = $publisher:ident,
+            subscriber = $subscriber:ident,
+            read_abs = $read_abs:ident,
+        ) => {
+            #[test]
+            fn $func_name() {
+                const IPC_ADDR: &str = concat!("ipc:///tmp/libstock_", stringify!($read_abs), stringify!($subscriber), ".ipc");
+                let publisher = $publisher::new().expect("failed to create publisher");
+                let subscriber = $subscriber::new().expect("failed to create subscriber");
+
+                std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
+                std::thread::spawn(move || $read_abs(subscriber, IPC_ADDR))
+                    .join()
+                    .unwrap();
+            }
+        };
+
+        (
+            async =>
+            func_name = $func_name:ident,
+            publisher = $publisher:ident,
+            subscriber = $subscriber:ident,
+            read_abs = $read_abs:ident,
+        ) => {
+            #[tokio::test(flavor = "multi_thread")]
+            async fn $func_name() {
+                const IPC_ADDR: &str = concat!("ipc:///tmp/libstock_", stringify!($read_abs), stringify!($subscriber), ".ipc");
+                let publisher = $publisher::new().expect("failed to create publisher");
+                let subscriber = $subscriber::new().expect("failed to create subscriber");
+
+                let publisher_thread =
+                    tokio::task::spawn(abstract_async_write_function(publisher, IPC_ADDR));
+                tokio::task::spawn($read_abs(subscriber, IPC_ADDR))
+                    .await
+                    .unwrap();
+
+                publisher_thread.abort();
+            }
+        };
+    }
+
     mod nanomsg {
         use super::super::nanomsg::{NanomsgPublisher, NanomsgSubscriber};
         use super::*;
 
-        #[test]
-        fn sync_v() {
-            const IPC_ADDR: &str = "ipc:///tmp/libstock-nanomsg-test.ipc";
-            let publisher = NanomsgPublisher::new().expect("failed to create publisher");
-            let subscriber = NanomsgSubscriber::new().expect("failed to create subscriber");
+        build_test!(
+            sync =>
+            func_name = sync_read,
+            publisher = NanomsgPublisher,
+            subscriber = NanomsgSubscriber,
+            read_abs = abstract_read_function,
+        );
 
-            std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
-            std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
-                .join()
-                .unwrap();
-        }
+        build_test!(
+            sync =>
+            func_name = sync_iter,
+            publisher = NanomsgPublisher,
+            subscriber = NanomsgSubscriber,
+            read_abs = abstract_iter_function,
+        );
 
-        #[tokio::test(flavor = "multi_thread")]
-        async fn async_v() {
-            const IPC_ADDR: &str = "ipc:///tmp/libstock-nanomsg-test-async.ipc";
-            let publisher = NanomsgPublisher::new().expect("failed to create publisher");
-            let subscriber = NanomsgSubscriber::new().expect("failed to create subscriber");
+        build_test!(
+            async =>
+            func_name = async_read,
+            publisher = NanomsgPublisher,
+            subscriber = NanomsgSubscriber,
+            read_abs = abstract_async_read_function,
+        );
 
-            let publisher_thread =
-                tokio::task::spawn(abstract_async_write_function(publisher, IPC_ADDR));
-            tokio::task::spawn(abstract_async_read_function(subscriber, IPC_ADDR))
-                .await
-                .unwrap();
-
-            publisher_thread.abort();
-        }
+        build_test!(
+            async =>
+            func_name = async_iter,
+            publisher = NanomsgPublisher,
+            subscriber = NanomsgSubscriber,
+            read_abs = abstract_async_stream_function,
+        );
     }
 
     mod zeromq {
         use super::super::zeromq::{ZeromqPublisher, ZeromqSubscriber};
         use super::*;
 
-        #[test]
-        fn sync() {
-            const IPC_ADDR: &str = "ipc:///tmp/libstock-zeromq-test.ipc";
-            let publisher = ZeromqPublisher::new().expect("failed to create publisher");
-            let subscriber = ZeromqSubscriber::new().expect("failed to create subscriber");
+        build_test!(
+            sync =>
+            func_name = sync_read,
+            publisher = ZeromqPublisher,
+            subscriber = ZeromqSubscriber,
+            read_abs = abstract_read_function,
+        );
 
-            std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
-            std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
-                .join()
-                .unwrap();
-        }
+        build_test!(
+            sync =>
+            func_name = sync_iter,
+            publisher = ZeromqPublisher,
+            subscriber = ZeromqSubscriber,
+            read_abs = abstract_iter_function,
+        );
 
-        #[tokio::test(flavor = "multi_thread")]
-        async fn async_v() {
-            const IPC_ADDR: &str = "ipc:///tmp/libstock-zeromq-test-async.ipc";
+        build_test!(
+            async =>
+            func_name = async_read,
+            publisher = ZeromqPublisher,
+            subscriber = ZeromqSubscriber,
+            read_abs = abstract_async_read_function,
+        );
 
-            let publisher = ZeromqPublisher::new().expect("failed to create publisher");
-            let subscriber = ZeromqSubscriber::new().expect("failed to create subscriber");
-
-            let publisher_thread =
-                tokio::task::spawn(abstract_async_write_function(publisher, IPC_ADDR));
-            tokio::task::spawn(abstract_async_read_function(subscriber, IPC_ADDR))
-                .await
-                .unwrap();
-
-            publisher_thread.abort();
-        }
+        build_test!(
+            async =>
+            func_name = async_iter,
+            publisher = ZeromqPublisher,
+            subscriber = ZeromqSubscriber,
+            read_abs = abstract_async_stream_function,
+        );
     }
 }
