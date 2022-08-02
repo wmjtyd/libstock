@@ -29,6 +29,14 @@ impl Connect for ZeromqSubscriber {
 
         Ok(())
     }
+
+    fn disconnect(&mut self, uri: &str) -> Result<(), Self::Err> {
+        self.socket
+            .disconnect(uri)
+            .map_err(ZeromqError::DisconnectFailed)?;
+
+        Ok(())
+    }
 }
 
 impl Read for ZeromqSubscriber {

@@ -22,6 +22,9 @@ pub trait Connect {
 
     /// Connect to the specified URI.
     fn connect(&mut self, uri: &str) -> Result<(), Self::Err>;
+
+    /// Disconnect from the specified URI.
+    fn disconnect(&mut self, uri: &str) -> Result<(), Self::Err>;
 }
 
 /// The trait for binding to the specified URI after configuration.
@@ -30,6 +33,9 @@ pub trait Bind {
 
     /// Bind to the specified URI.
     fn bind(&mut self, uri: &str) -> Result<(), Self::Err>;
+
+    /// Unbind from the specified URI.
+    fn unbind(&mut self, uri: &str) -> Result<(), Self::Err>;
 }
 
 /// The trait for indicating that it is a Subscriber in compile-time.
