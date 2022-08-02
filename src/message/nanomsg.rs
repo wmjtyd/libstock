@@ -162,7 +162,7 @@ mod tests {
             /* NOT IN DOC -- END -- Start a thread to write. */
 
             use wmjtyd_libstock::message::nanomsg::NanomsgSubscriber;
-            use wmjtyd_libstock::message::traits::{Connect, AsyncReadExt, Subscribe};
+            use wmjtyd_libstock::message::traits::{AsyncReadExt, Connect, Subscribe};
 
             let nanomsg = NanomsgSubscriber::new();
 

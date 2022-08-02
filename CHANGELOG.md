@@ -269,7 +269,19 @@ if let Ok(mut nanomsg) = nanomsg {
 thus the logic is just the same. Example of this new API:
 
 ```rs
+use wmjtyd_libstock::message::zeromq::ZeromqSubscriber;
+use wmjtyd_libstock::message::traits::{Connect, AsyncReadExt, Subscribe};
 
+let zeromq = ZeromqSubscriber::new();
+
+if let Ok(mut zeromq) = zeromq {
+    zeromq.connect("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+    zeromq.subscribe(b"").ok();
+
+    let mut buf = [0; 12];
+    zeromq.read_exact(&mut buf).await.ok();
+    assert_eq!(b"Hello World!", &buf);
+}
 ```
 
 ### 0.4.0 – Breaking Changes

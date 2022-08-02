@@ -89,5 +89,71 @@ mod tests {
                 zeromq.write_all(b"Hello World!").await.ok();
             }
         }
+
+        #[test]
+        fn new_read_example() {
+            /* NOT IN DOC -- BEGIN -- Start a thread to write. */
+            std::thread::spawn(|| {
+                use wmjtyd_libstock::message::traits::{Bind, Write};
+                use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
+
+                let zeromq = ZeromqPublisher::new();
+
+                if let Ok(mut zeromq) = zeromq {
+                    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                    loop {
+                        zeromq.write_all(b"Hello World!").ok();
+                    }
+                }
+            });
+            /* NOT IN DOC -- END -- Start a thread to write. */
+
+            use wmjtyd_libstock::message::traits::{Connect, Read, Subscribe};
+            use wmjtyd_libstock::message::zeromq::ZeromqSubscriber;
+
+            let zeromq = ZeromqSubscriber::new();
+
+            if let Ok(mut zeromq) = zeromq {
+                zeromq.connect("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                zeromq.subscribe(b"").ok();
+
+                let mut buf = [0; 12];
+                zeromq.read_exact(&mut buf).ok();
+                assert_eq!(b"Hello World!", &buf);
+            }
+        }
+
+        #[tokio::test]
+        async fn new_read_async_example() {
+            /* NOT IN DOC -- BEGIN -- Start a thread to write. */
+            std::thread::spawn(|| {
+                use wmjtyd_libstock::message::traits::{Bind, Write};
+                use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
+
+                let zeromq = ZeromqPublisher::new();
+
+                if let Ok(mut zeromq) = zeromq {
+                    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                    loop {
+                        zeromq.write_all(b"Hello World!").ok();
+                    }
+                }
+            });
+            /* NOT IN DOC -- END -- Start a thread to write. */
+
+            use wmjtyd_libstock::message::traits::{AsyncReadExt, Connect, Subscribe};
+            use wmjtyd_libstock::message::zeromq::ZeromqSubscriber;
+
+            let zeromq = ZeromqSubscriber::new();
+
+            if let Ok(mut zeromq) = zeromq {
+                zeromq.connect("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                zeromq.subscribe(b"").ok();
+
+                let mut buf = [0; 12];
+                zeromq.read_exact(&mut buf).await.ok();
+                assert_eq!(b"Hello World!", &buf);
+            }
+        }
     }
 }

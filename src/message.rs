@@ -171,14 +171,8 @@ mod tests {
         let mut buf = [0u8; 17];
         let message_size = subscriber.read(&mut buf).await.expect("failed to read");
 
-        assert_eq!(
-            &buf,
-            b"TEST Hello, World"
-        );
-        assert_eq!(
-            message_size,
-            17
-        )
+        assert_eq!(&buf, b"TEST Hello, World");
+        assert_eq!(message_size, 17)
     }
 
     async fn abstract_async_stream_function<E, S>(mut subscriber: S, addr: &str)
@@ -193,7 +187,9 @@ mod tests {
 
         let mut subscriber = Box::pin(subscriber);
 
-        let response = subscriber.next().await
+        let response = subscriber
+            .next()
+            .await
             .expect("no data inside")
             .expect("data receiving failed");
 
@@ -209,13 +205,11 @@ mod tests {
         subscriber.subscribe(b"TEST").expect("failed to subscribe");
 
         let mut buf = [0; 17];
-        subscriber.read_exact(&mut buf)
+        subscriber
+            .read_exact(&mut buf)
             .expect("data retriving failed");
 
-        assert_eq!(
-            &buf[..],
-            b"TEST Hello, World"
-        );
+        assert_eq!(&buf[..], b"TEST Hello, World");
     }
 
     fn abstract_iter_function<S, E>(mut subscriber: S, addr: &str)
@@ -243,7 +237,12 @@ mod tests {
         ) => {
             #[test]
             fn $func_name() {
-                const IPC_ADDR: &str = concat!("ipc:///tmp/libstock_", stringify!($read_abs), stringify!($subscriber), ".ipc");
+                const IPC_ADDR: &str = concat!(
+                    "ipc:///tmp/libstock_",
+                    stringify!($read_abs),
+                    stringify!($subscriber),
+                    ".ipc"
+                );
                 let publisher = $publisher::new().expect("failed to create publisher");
                 let subscriber = $subscriber::new().expect("failed to create subscriber");
 
@@ -263,7 +262,12 @@ mod tests {
         ) => {
             #[tokio::test(flavor = "multi_thread")]
             async fn $func_name() {
-                const IPC_ADDR: &str = concat!("ipc:///tmp/libstock_", stringify!($read_abs), stringify!($subscriber), ".ipc");
+                const IPC_ADDR: &str = concat!(
+                    "ipc:///tmp/libstock_",
+                    stringify!($read_abs),
+                    stringify!($subscriber),
+                    ".ipc"
+                );
                 let publisher = $publisher::new().expect("failed to create publisher");
                 let subscriber = $subscriber::new().expect("failed to create subscriber");
 
