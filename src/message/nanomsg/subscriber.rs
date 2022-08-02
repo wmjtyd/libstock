@@ -11,7 +11,7 @@ use crate::message::traits::{
     Stream,
     SubscribeStreamItem,
     Subscriber,
-    SyncSubscriber,
+    SyncSubscriber, Subscribe,
 };
 use crate::message::MessageError;
 
@@ -141,6 +141,18 @@ impl Stream for NanomsgSubscriber {
 
 impl AsyncSubscriber for NanomsgSubscriber {
     type Err = MessageError;
+}
+
+impl Subscribe for NanomsgSubscriber {
+    type Err = MessageError;
+
+    fn subscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
+        Ok(self.socket.subscribe(topic).map_err(NanomsgError::SubscribeFailed)?)
+    }
+
+    fn unsubscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
+        Ok(self.socket.unsubscribe(topic).map_err(NanomsgError::UnsubscribeFailed)?)
+    }
 }
 
 /// Copy from https://doc.rust-lang.org/nightly/core/mem/union.MaybeUninit.html#method.uninit_array.
