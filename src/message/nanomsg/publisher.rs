@@ -6,7 +6,7 @@ use crate::message::traits::{AsyncPublisher, AsyncWrite, Bind, Publisher, SyncPu
 
 construct_nanomsg!(
     name = NanomsgPublisher,
-    socket_type = nanomsg::Protocol::Sub,
+    socket_type = nanomsg::Protocol::Pub,
     category = Publisher
 );
 
