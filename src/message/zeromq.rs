@@ -1,13 +1,12 @@
 //! A basic encap methods of [`zeromq`].
 
-use tokio::io::{self, AsyncRead, AsyncWrite};
-use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
-
-pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
-pub use {PubSocket as Pub, SubSocket as Sub};
-
 use std::ops::{Deref, DerefMut};
 use std::task::Poll;
+
+use tokio::io::{self, AsyncRead, AsyncWrite};
+pub use zeromq::{PubSocket, SubSocket, ZmqError, ZmqResult};
+use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
+pub use {PubSocket as Pub, SubSocket as Sub};
 
 use super::AsyncSubscribe;
 

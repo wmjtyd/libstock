@@ -1,8 +1,9 @@
 //! Read the specified file and return the content stream.
 
-use chrono::{Duration, Local};
 use std::fs::File;
 use std::io::Read;
+
+use chrono::{Duration, Local};
 
 use crate::file::datadir::get_ident_path;
 use crate::file::timestamp::fmt_timestamp;

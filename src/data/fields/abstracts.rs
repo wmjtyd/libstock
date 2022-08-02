@@ -1,6 +1,7 @@
-use super::{FieldDeserializer, FieldSerializer};
 use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
+
+use super::{FieldDeserializer, FieldSerializer};
 
 /// A trait that abstracted a field.
 ///

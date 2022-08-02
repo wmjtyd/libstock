@@ -16,13 +16,11 @@ pub mod symbol_pair;
 pub mod timestamp;
 pub mod trade_side;
 
-use super::num::NumError;
 use std::time::SystemTimeError;
 
-pub use super::serializer::{FieldDeserializer, FieldSerializer};
-pub use either::Either;
-
+pub use abstracts::{Field, Interopable};
 pub use decimal::DecimalField;
+pub use either::Either;
 pub use eod_flag::EndOfDataFlag;
 pub use exchange_type::ExchangeTypeField;
 pub use info_type::InfoTypeField;
@@ -35,7 +33,8 @@ pub use symbol_pair::SymbolPairField;
 pub use timestamp::TimestampField;
 pub use trade_side::TradeSideField;
 
-pub use abstracts::{Field, Interopable};
+use super::num::NumError;
+pub use super::serializer::{FieldDeserializer, FieldSerializer};
 
 #[derive(thiserror::Error, Debug)]
 pub enum FieldError {

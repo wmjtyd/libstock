@@ -11,11 +11,20 @@ pub use crypto_message::BboMsg;
 use typed_builder::TypedBuilder;
 
 use super::fields::{
-    EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
-    PriceDataField, SymbolPairField, TimestampField,
+    EndOfDataFlag,
+    ExchangeTypeField,
+    FieldError,
+    MarketTypeField,
+    MessageTypeField,
+    PriceDataField,
+    SymbolPairField,
+    TimestampField,
 };
 use super::serializer::{
-    deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
+    deserialize_block_builder,
+    serialize_block_builder,
+    StructDeserializer,
+    StructSerializer,
 };
 
 /// The structure of BBO.
@@ -166,9 +175,8 @@ mod tests {
     use crypto_market_type::MarketType;
     use crypto_message::BboMsg;
 
-    use crate::data::serializer::{StructDeserializer, StructSerializer};
-
     use super::BboStructure;
+    use crate::data::serializer::{StructDeserializer, StructSerializer};
 
     // FIXME: add Clone, PartialEq, Eq, Debug, Hash... to crypto-crawler-rs.
     fn construct_bbomsg(unknown_market_type: bool) -> BboMsg {

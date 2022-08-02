@@ -1,10 +1,9 @@
 //! A basic encap methods of [`nanomsg`].
 
-use nanomsg::Socket;
-
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 
+use nanomsg::Socket;
 pub use nanomsg::{Error as MessageError, Protocol as NanomsgProtocol, Result as MessageResult};
 
 use super::Subscribe;

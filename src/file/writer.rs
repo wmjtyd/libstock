@@ -10,9 +10,8 @@ use tokio::task::JoinHandle;
 use tracing::Instrument;
 use uuid::Uuid;
 
-use crate::file::timestamp::get_timestamp;
-
 use super::datadir::get_ident_path;
+use crate::file::timestamp::get_timestamp;
 
 /// A owned data entry to send to a [`DataWriter`].
 ///

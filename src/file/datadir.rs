@@ -1,5 +1,6 @@
-use concat_string::concat_string;
 use std::path::PathBuf;
+
+use concat_string::concat_string;
 
 /// Get the data directory.
 ///

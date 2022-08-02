@@ -6,10 +6,9 @@ use std::ops::{Deref, DerefMut};
 use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 pub use rust_decimal::{Decimal, Error as DecimalError};
 
-use crate::data::num::{Decoder, Encoder};
-
 use super::abstracts::derive_hsf;
 use super::{FieldDeserializer, FieldError, FieldSerializer, Interopable};
+use crate::data::num::{Decoder, Encoder};
 
 /// The field to store numbers serialized with [`crate::data::num`]'s methods.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -2,19 +2,28 @@
 
 use std::io::{Read, Write};
 
-use super::fields::price_data::Order;
 pub use crypto_message::OrderBookMsg;
-
 use typed_builder::TypedBuilder;
 
 use super::fields::info_type::InfoType;
+use super::fields::price_data::Order;
 use super::fields::{
-    EndOfDataFlag, ExchangeTypeField, FieldError, InfoTypeField, MarketTypeField, MessageTypeField,
-    PriceDataField, SymbolPairField, TimestampField,
+    EndOfDataFlag,
+    ExchangeTypeField,
+    FieldError,
+    InfoTypeField,
+    MarketTypeField,
+    MessageTypeField,
+    PriceDataField,
+    SymbolPairField,
+    TimestampField,
 };
 use super::order::{get_orders, OrderType};
 use super::serializer::{
-    serialize_block_builder, FieldDeserializer, FieldSerializer, StructDeserializer,
+    serialize_block_builder,
+    FieldDeserializer,
+    FieldSerializer,
+    StructDeserializer,
     StructSerializer,
 };
 

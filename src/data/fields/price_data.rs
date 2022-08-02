@@ -4,7 +4,6 @@
 //! For more information, see [`PriceDataField`].
 
 pub use crypto_message::Order;
-
 use typed_builder::TypedBuilder;
 
 use super::{DecimalField, Field, FieldDeserializer, FieldError, FieldSerializer};
