@@ -10,10 +10,10 @@ pub trait Subscribe {
     type Err;
 
     /// Subscribe a topic.
-    fn subscribe(&mut self, topic: &str) -> Result<(), Self::Err>;
+    fn subscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err>;
 
     /// Unsubscribe a topic.
-    fn unsubscribe(&mut self, topic: &str) -> Result<(), Self::Err>;
+    fn unsubscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err>;
 }
 
 /// The trait for connecting to the specified URI after configuration.
