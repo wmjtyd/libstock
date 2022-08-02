@@ -22,8 +22,6 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - name: Install nanomsg
         run: bash scripts/ci_install_nanomsg.sh
-      - name: Install zeromq
-        run: sudo apt install libzmq3-dev
       - name: Build
         run: cargo build --verbose
       - name: Run tests
