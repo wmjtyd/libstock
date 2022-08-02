@@ -212,7 +212,7 @@ use tokio::io::AsyncWriteExt;  // or use wmjtyd_libstock::message::traits::Async
 }
 ```
 
-The full example:
+The full synchronous example:
 
 ```rs
 use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
@@ -228,17 +228,17 @@ if let Ok(mut nanomsg) = nanomsg {
 
 **Migrate `zeromq` writers**
 
-Just like `nanomsg`, but use `zeromq::ZeromqPublisher`. Example:
+Just like `nanomsg`, but use `zeromq::ZeromqPublisher`. Asynchronous Example:
 
 ```rs
+use wmjtyd_libstock::message::traits::{AsyncWriteExt, Bind};
 use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
-use wmjtyd_libstock::message::traits::{Bind, Write};
 
 let zeromq = ZeromqPublisher::new();
 
 if let Ok(mut zeromq) = zeromq {
-    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w.ipc").ok();
-    zeromq.write_all(b"Hello World!").ok();
+    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w-a.ipc").ok();
+    zeromq.write_all(b"Hello World!").await.ok();
 }
 ```
 
