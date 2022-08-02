@@ -15,7 +15,7 @@ use crate::message::{MessageError, MessageResult};
 
 construct_zeromq!(
     name = ZeromqSubscriber,
-    socket_type = zmq::SocketType::SUB,
+    socket_type = zmq2::SocketType::SUB,
     category = Subscriber
 );
 
@@ -56,14 +56,14 @@ impl AsyncRead for ZeromqSubscriber {
         cx: &mut std::task::Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
-        let result = self.socket.recv_msg(zmq::DONTWAIT);
+        let result = self.socket.recv_msg(zmq2::DONTWAIT);
 
         match result {
             Ok(m) => {
                 buf.put_slice(&m);
                 Poll::Ready(Ok(()))
             }
-            Err(zmq::Error::EAGAIN) => {
+            Err(zmq2::Error::EAGAIN) => {
                 cx.waker().wake_by_ref();
                 Poll::Pending
             }
@@ -79,11 +79,11 @@ impl Stream for ZeromqSubscriber {
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
-        let result = self.socket.recv_bytes(zmq::DONTWAIT);
+        let result = self.socket.recv_bytes(zmq2::DONTWAIT);
 
         match result {
             Ok(m) => Poll::Ready(Some(Ok(m))),
-            Err(zmq::Error::EAGAIN) => {
+            Err(zmq2::Error::EAGAIN) => {
                 cx.waker().wake_by_ref();
                 Poll::Pending
             }

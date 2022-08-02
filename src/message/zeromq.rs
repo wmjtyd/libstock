@@ -13,13 +13,16 @@ pub use subscriber::ZeromqSubscriber;
 #[derive(thiserror::Error, Debug)]
 pub enum ZeromqError {
     #[error("Unable to create socket: {0}")]
-    CreateSocketFailed(zmq::Error),
+    CreateSocketFailed(zmq2::Error),
 
     #[error("Failed to connect to socket: {0}")]
-    ConnectFailed(zmq::Error),
+    ConnectFailed(zmq2::Error),
 
     #[error("Failed to receive: {0}")]
-    RecvFailed(zmq::Error),
+    RecvFailed(zmq2::Error),
+
+    #[error("Failed to send: {0}")]
+    SendFailed(zmq2::Error),
 }
 
 pub type ZeromqResult<T> = Result<T, ZeromqError>;
