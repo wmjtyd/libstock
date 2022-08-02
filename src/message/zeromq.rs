@@ -8,8 +8,8 @@ mod common;
 mod publisher;
 mod subscriber;
 
-pub use subscriber::ZeromqSubscriber;
 pub use publisher::ZeromqPublisher;
+pub use subscriber::ZeromqSubscriber;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ZeromqError {

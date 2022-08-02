@@ -1,8 +1,8 @@
 use std::task::Poll;
 
-use crate::message::traits::{Publisher, Bind, SyncPublisher, AsyncPublisher, Write, AsyncWrite};
-
-use super::{common::construct_nanomsg, NanomsgError};
+use super::common::construct_nanomsg;
+use super::NanomsgError;
+use crate::message::traits::{AsyncPublisher, AsyncWrite, Bind, Publisher, SyncPublisher, Write};
 
 construct_nanomsg!(
     name = NanomsgPublisher,
@@ -24,7 +24,7 @@ impl Bind for NanomsgPublisher {
         // Try to remove the “uri” from endpoint; if none is removed,
         // we considers it not existed.
         let endp = self.endpoint.remove(uri);
-        
+
         if let Some(mut endp) = endp {
             Ok(endp.shutdown().map_err(NanomsgError::UnbindFailed)?)
         } else {
@@ -58,16 +58,22 @@ impl AsyncWrite for NanomsgPublisher {
             Err(nanomsg::Error::TryAgain) => {
                 cx.waker().wake_by_ref();
                 Poll::Pending
-            },
+            }
             Err(err) => Poll::Ready(Err(err.into())),
         }
     }
 
-    fn poll_flush(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), std::io::Error>> {
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), std::io::Error>> {
         Poll::Ready(Ok(()))
     }
 
-    fn poll_shutdown(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), std::io::Error>> {
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), std::io::Error>> {
         // No needs to flush or shutdown. Just drop it :)
         Poll::Ready(Ok(()))
     }

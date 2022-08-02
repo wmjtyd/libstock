@@ -7,8 +7,9 @@ use crate::message::traits::{
     Connect,
     Read,
     Stream,
+    SubscribeStreamItem,
     Subscriber,
-    SyncSubscriber, SubscribeStreamItem,
+    SyncSubscriber,
 };
 use crate::message::zeromq::ZeromqError;
 use crate::message::MessageError;

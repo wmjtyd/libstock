@@ -1,10 +1,10 @@
 use std::task::Poll;
 
 use super::super::traits::{AsyncWrite, Write};
-
-use crate::message::{traits::{Publisher, Bind, SyncPublisher, AsyncPublisher}, MessageError};
-
-use super::{common::construct_zeromq, ZeromqError};
+use super::common::construct_zeromq;
+use super::ZeromqError;
+use crate::message::traits::{AsyncPublisher, Bind, Publisher, SyncPublisher};
+use crate::message::MessageError;
 
 construct_zeromq!(
     name = ZeromqPublisher,
@@ -34,7 +34,7 @@ impl Write for ZeromqPublisher {
 
         match response {
             Ok(()) => Ok(buf.len()),
-            Err(e) => Err(e.into())
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -53,9 +53,7 @@ impl AsyncWrite for ZeromqPublisher {
         let result = self.socket.send(buf, zmq2::DONTWAIT);
 
         match result {
-            Ok(_) => {
-                Poll::Ready(Ok(buf.len()))
-            }
+            Ok(_) => Poll::Ready(Ok(buf.len())),
             Err(zmq2::Error::EAGAIN) => {
                 cx.waker().wake_by_ref();
                 Poll::Pending
@@ -64,12 +62,18 @@ impl AsyncWrite for ZeromqPublisher {
         }
     }
 
-    fn poll_flush(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), std::io::Error>> {
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), std::io::Error>> {
         // Zeromq doesn't need flush.
         Poll::Ready(Ok(()))
     }
 
-    fn poll_shutdown(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), std::io::Error>> {
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), std::io::Error>> {
         // We don't need to close anything ;)
         Poll::Ready(Ok(()))
     }

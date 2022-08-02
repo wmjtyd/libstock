@@ -1,8 +1,8 @@
 //! A basic encap methods of [`nanomsg`].
 
 mod common;
-mod subscriber;
 mod publisher;
+mod subscriber;
 
 #[derive(thiserror::Error, Debug)]
 pub enum NanomsgError {
@@ -154,7 +154,6 @@ pub type NanomsgResult<T> = Result<T, NanomsgError>;
 //         self.socket.flush()
 //     }
 // }
-
 
 // impl Subscribe for Nanomsg {
 //     type Result = MessageResult<()>;

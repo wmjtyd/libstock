@@ -1,8 +1,19 @@
-use std::{task::Poll, mem::MaybeUninit};
+use std::mem::MaybeUninit;
+use std::task::Poll;
 
-use crate::message::{traits::{Subscriber, SyncSubscriber, AsyncSubscriber, Connect, SubscribeStreamItem, Stream, AsyncRead, Read}, MessageError};
-
-use super::{common::construct_nanomsg, NanomsgError};
+use super::common::construct_nanomsg;
+use super::NanomsgError;
+use crate::message::traits::{
+    AsyncRead,
+    AsyncSubscriber,
+    Connect,
+    Read,
+    Stream,
+    SubscribeStreamItem,
+    Subscriber,
+    SyncSubscriber,
+};
+use crate::message::MessageError;
 
 construct_nanomsg!(
     name = NanomsgSubscriber,
@@ -14,7 +25,10 @@ impl Connect for NanomsgSubscriber {
     type Err = MessageError;
 
     fn connect(&mut self, uri: &str) -> Result<(), Self::Err> {
-        let endpoint = self.socket.connect(uri).map_err(NanomsgError::ConnectFailed)?;
+        let endpoint = self
+            .socket
+            .connect(uri)
+            .map_err(NanomsgError::ConnectFailed)?;
 
         self.endpoint.insert(uri.to_string(), endpoint);
         Ok(())
@@ -24,7 +38,7 @@ impl Connect for NanomsgSubscriber {
         // Try to remove the “uri” from endpoint; if none is removed,
         // we considers it not existed.
         let endp = self.endpoint.remove(uri);
-        
+
         if let Some(mut endp) = endp {
             Ok(endp.shutdown().map_err(NanomsgError::DisconnectFailed)?)
         } else {
@@ -49,16 +63,17 @@ impl Iterator for NanomsgSubscriber {
             // SAFETY: The array will be initiated when reading to it.
             // Besides, [u8; 4096] should not be a big deal.
             #[allow(clippy::uninit_assumed_init)]
-            unsafe { std::mem::MaybeUninit::<[u8; 4096]>::uninit().assume_init() }
+            unsafe {
+                std::mem::MaybeUninit::<[u8; 4096]>::uninit().assume_init()
+            }
         };
-        let result = self.read(&mut buf)
-            .map_err(NanomsgError::ReadFailed);
+        let result = self.read(&mut buf).map_err(NanomsgError::ReadFailed);
 
         match result {
             Ok(len) => {
                 let owned_data = buf[..len].to_vec();
                 Some(Ok(owned_data))
-            },
+            }
             Err(e) => Some(Err(e.into())),
         }
     }
@@ -100,13 +115,17 @@ impl AsyncRead for NanomsgSubscriber {
 impl Stream for NanomsgSubscriber {
     type Item = SubscribeStreamItem<<Self as AsyncSubscriber>::Err>;
 
-    fn poll_next(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
         // The buffer can place at most 4096 bytes (4KB) of data.
         // It is enough for our finance data.
         let mut buf = create_uninitiated_array::<u8, 4096>();
         let mut tokio_read_buf = tokio::io::ReadBuf::uninit(&mut buf);
 
-        let read_result = self.poll_read(cx, &mut tokio_read_buf)
+        let read_result = self
+            .poll_read(cx, &mut tokio_read_buf)
             .map_err(NanomsgError::ReadFailed);
 
         match read_result {
