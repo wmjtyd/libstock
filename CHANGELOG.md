@@ -248,7 +248,19 @@ if let Ok(mut zeromq) = zeromq {
 Example of this new API:
 
 ```rs
+use wmjtyd_libstock::message::nanomsg::NanomsgSubscriber;
+use wmjtyd_libstock::message::traits::{Connect, Read, Subscribe};
 
+let nanomsg = NanomsgSubscriber::new();
+
+if let Ok(mut nanomsg) = nanomsg {
+    nanomsg.connect("ipc:///tmp/cl-nanomsg-new-api-r.ipc").ok();
+    nanomsg.subscribe(b"").ok();
+
+    let mut buf = [0; 12];
+    nanomsg.read_exact(&mut buf).ok();
+    assert_eq!(b"Hello World!", &buf);
+}
 ```
 
 **Migrate `zeromq` readers**

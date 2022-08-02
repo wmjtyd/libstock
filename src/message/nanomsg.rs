@@ -98,13 +98,81 @@ mod tests {
         #[tokio::test]
         async fn migrate_to_new_api_write_async() {
             use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
-            use wmjtyd_libstock::message::traits::{Bind, AsyncWriteExt};
+            use wmjtyd_libstock::message::traits::{AsyncWriteExt, Bind};
 
             let nanomsg = NanomsgPublisher::new();
 
             if let Ok(mut nanomsg) = nanomsg {
-                nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w.ipc").ok();
+                nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-w-a.ipc").ok();
                 nanomsg.write_all(b"Hello World!").await.ok();
+            }
+        }
+
+        #[test]
+        fn new_read_example() {
+            /* NOT IN DOC -- BEGIN -- Start a thread to write. */
+            std::thread::spawn(|| {
+                use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+                use wmjtyd_libstock::message::traits::{Bind, Write};
+
+                let nanomsg = NanomsgPublisher::new();
+
+                if let Ok(mut nanomsg) = nanomsg {
+                    nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-r.ipc").ok();
+
+                    loop {
+                        nanomsg.write_all(b"Hello World!").ok();
+                    }
+                }
+            });
+            /* NOT IN DOC -- END -- Start a thread to write. */
+
+            use wmjtyd_libstock::message::nanomsg::NanomsgSubscriber;
+            use wmjtyd_libstock::message::traits::{Connect, Read, Subscribe};
+
+            let nanomsg = NanomsgSubscriber::new();
+
+            if let Ok(mut nanomsg) = nanomsg {
+                nanomsg.connect("ipc:///tmp/cl-nanomsg-new-api-r.ipc").ok();
+                nanomsg.subscribe(b"").ok();
+
+                let mut buf = [0; 12];
+                nanomsg.read_exact(&mut buf).ok();
+                assert_eq!(b"Hello World!", &buf);
+            }
+        }
+
+        #[tokio::test]
+        async fn new_read_async_example() {
+            /* NOT IN DOC -- BEGIN -- Start a thread to write. */
+            std::thread::spawn(|| {
+                use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
+                use wmjtyd_libstock::message::traits::{Bind, Write};
+
+                let nanomsg = NanomsgPublisher::new();
+
+                if let Ok(mut nanomsg) = nanomsg {
+                    nanomsg.bind("ipc:///tmp/cl-nanomsg-new-api-r.ipc").ok();
+
+                    loop {
+                        nanomsg.write_all(b"Hello World!").ok();
+                    }
+                }
+            });
+            /* NOT IN DOC -- END -- Start a thread to write. */
+
+            use wmjtyd_libstock::message::nanomsg::NanomsgSubscriber;
+            use wmjtyd_libstock::message::traits::{Connect, AsyncReadExt, Subscribe};
+
+            let nanomsg = NanomsgSubscriber::new();
+
+            if let Ok(mut nanomsg) = nanomsg {
+                nanomsg.connect("ipc:///tmp/cl-nanomsg-new-api-r.ipc").ok();
+                nanomsg.subscribe(b"").ok();
+
+                let mut buf = [0; 12];
+                nanomsg.read_exact(&mut buf).await.ok();
+                assert_eq!(b"Hello World!", &buf);
             }
         }
     }
