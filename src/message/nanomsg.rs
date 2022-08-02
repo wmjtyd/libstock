@@ -4,6 +4,9 @@ mod common;
 mod publisher;
 mod subscriber;
 
+pub use publisher::NanomsgPublisher;
+pub use subscriber::NanomsgSubscriber;
+
 #[derive(thiserror::Error, Debug)]
 pub enum NanomsgError {
     #[error("Unable to create socket: {0}")]
