@@ -23,10 +23,10 @@
 //! ```
 //! use std::fmt::Debug;
 //! use wmjtyd_libstock::message::traits::{Bind, Connect, Subscribe, SyncPublisher, SyncSubscriber};
-//! 
+//!
 //! fn abstract_write_function(mut publisher: impl Bind<Err = impl Debug> + SyncPublisher, addr: &str) {
 //!     publisher.bind(addr).expect("failed to bind");
-//! 
+//!
 //!     loop {
 //!         publisher
 //!             .write_all(b"TEST Hello, World")
@@ -36,7 +36,7 @@
 //!             .expect("failed to flush")
 //!     }
 //! }
-//! 
+//!
 //! fn abstract_read_function<S, E>(mut subscriber: S, addr: &str)
 //! where
 //!     E: Debug,
@@ -44,42 +44,42 @@
 //! {
 //!     subscriber.connect(addr).expect("failed to connect");
 //!     subscriber.subscribe(b"TEST").expect("failed to subscribe");
-//! 
+//!
 //!     let message = subscriber.next().expect("no data inside");
 //!     assert_eq!(
 //!         message.expect("data receiving failed"),
 //!         b"TEST Hello, World"
 //!     );
 //! }
-//! 
+//!
 //! fn nanomsg_example() {
 //!     const IPC_ADDR: &str = "ipc:///tmp/libstock-nanomsg-test.ipc";
-//! 
+//!
 //!     use wmjtyd_libstock::message::nanomsg::{NanomsgPublisher, NanomsgSubscriber};
-//! 
+//!
 //!     let publisher = NanomsgPublisher::new().expect("failed to create publisher");
 //!     let subscriber = NanomsgSubscriber::new().expect("failed to create subscriber");
-//! 
+//!
 //!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
 //!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
 //!         .join()
 //!         .unwrap();
 //! }
-//! 
+//!
 //! fn zeromq_example() {
 //!     const IPC_ADDR: &str = "ipc:///tmp/libstock-zeromq-test.ipc";
-//! 
+//!
 //!     use wmjtyd_libstock::message::zeromq::{ZeromqPublisher, ZeromqSubscriber};
-//! 
+//!
 //!     let publisher = ZeromqPublisher::new().expect("failed to create publisher");
 //!     let subscriber = ZeromqSubscriber::new().expect("failed to create subscriber");
-//! 
+//!
 //!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
 //!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
 //!         .join()
 //!         .unwrap();
 //! }
-//! 
+//!
 //! nanomsg_example();
 //! zeromq_example();
 //! ```
