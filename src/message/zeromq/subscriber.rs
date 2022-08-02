@@ -3,8 +3,9 @@ use std::task::Poll;
 use crate::message::traits::{AsyncRead, Stream};
 use crate::message::MessageResult;
 
+use crate::message::traits::AsyncSubscriber;
 use crate::message::zeromq::ZeromqError;
-use crate::message::{traits::AsyncSubscriber, MessageError};
+use crate::message::MessageError;
 
 use crate::message::traits::Read;
 
