@@ -9,6 +9,7 @@ mod publisher;
 mod subscriber;
 
 pub use subscriber::ZeromqSubscriber;
+pub use publisher::ZeromqPublisher;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ZeromqError {
