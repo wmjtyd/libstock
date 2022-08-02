@@ -4,6 +4,7 @@ macro_rules! construct_zeromq {
         socket_type = $socket_type:expr,
         category = $category:path
     ) => {
+        #[doc = concat!("The [`", stringify!($category), "`] of ZeroMQ.")]
         pub struct $name {
             socket: zmq2::Socket,
         }
@@ -24,7 +25,7 @@ macro_rules! construct_zeromq {
                 &self.socket
             }
         }
-        
+
         impl AsMut<zmq2::Socket> for $name {
             fn as_mut(&mut self) -> &mut zmq2::Socket {
                 &mut self.socket

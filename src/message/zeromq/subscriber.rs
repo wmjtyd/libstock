@@ -7,9 +7,10 @@ use crate::message::traits::{
     Connect,
     Read,
     Stream,
+    Subscribe,
     SubscribeStreamItem,
     Subscriber,
-    SyncSubscriber, Subscribe,
+    SyncSubscriber,
 };
 use crate::message::zeromq::ZeromqError;
 use crate::message::MessageError;
@@ -105,11 +106,17 @@ impl Subscribe for ZeromqSubscriber {
     type Err = MessageError;
 
     fn subscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
-        Ok(self.socket.set_subscribe(topic).map_err(ZeromqError::SubscribeFailed)?)
+        Ok(self
+            .socket
+            .set_subscribe(topic)
+            .map_err(ZeromqError::SubscribeFailed)?)
     }
 
     fn unsubscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
-        Ok(self.socket.set_unsubscribe(topic).map_err(ZeromqError::UnsubscribeFailed)?)
+        Ok(self
+            .socket
+            .set_unsubscribe(topic)
+            .map_err(ZeromqError::UnsubscribeFailed)?)
     }
 }
 

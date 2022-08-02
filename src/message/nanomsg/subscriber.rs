@@ -9,9 +9,10 @@ use crate::message::traits::{
     Connect,
     Read,
     Stream,
+    Subscribe,
     SubscribeStreamItem,
     Subscriber,
-    SyncSubscriber, Subscribe,
+    SyncSubscriber,
 };
 use crate::message::MessageError;
 
@@ -147,11 +148,17 @@ impl Subscribe for NanomsgSubscriber {
     type Err = MessageError;
 
     fn subscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
-        Ok(self.socket.subscribe(topic).map_err(NanomsgError::SubscribeFailed)?)
+        Ok(self
+            .socket
+            .subscribe(topic)
+            .map_err(NanomsgError::SubscribeFailed)?)
     }
 
     fn unsubscribe(&mut self, topic: &[u8]) -> Result<(), Self::Err> {
-        Ok(self.socket.unsubscribe(topic).map_err(NanomsgError::UnsubscribeFailed)?)
+        Ok(self
+            .socket
+            .unsubscribe(topic)
+            .map_err(NanomsgError::UnsubscribeFailed)?)
     }
 }
 

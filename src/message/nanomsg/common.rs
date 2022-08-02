@@ -4,6 +4,7 @@ macro_rules! construct_nanomsg {
         socket_type = $socket_type:expr,
         category = $category:path
     ) => {
+        #[doc = concat!("The [`", stringify!($category), "`] of Nanomsg.")]
         pub struct $name {
             socket: nanomsg::Socket,
             endpoint: std::collections::HashMap<String, nanomsg::Endpoint>,
@@ -24,7 +25,7 @@ macro_rules! construct_nanomsg {
                 &self.socket
             }
         }
-        
+
         impl AsMut<nanomsg::Socket> for $name {
             fn as_mut(&mut self) -> &mut nanomsg::Socket {
                 &mut self.socket
