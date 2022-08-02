@@ -8,10 +8,10 @@ use crate::message::traits::{
     Read,
     Stream,
     Subscriber,
-    SyncSubscriber,
+    SyncSubscriber, SubscribeStreamItem,
 };
 use crate::message::zeromq::ZeromqError;
-use crate::message::{MessageError, MessageResult};
+use crate::message::MessageError;
 
 construct_zeromq!(
     name = ZeromqSubscriber,
@@ -46,7 +46,7 @@ impl Read for ZeromqSubscriber {
 }
 
 impl Iterator for ZeromqSubscriber {
-    type Item = MessageResult<Vec<u8>>;
+    type Item = SubscribeStreamItem<<Self as SyncSubscriber>::Err>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let data = self.socket.recv_bytes(0).map_err(ZeromqError::RecvFailed);
@@ -81,7 +81,7 @@ impl AsyncRead for ZeromqSubscriber {
 }
 
 impl Stream for ZeromqSubscriber {
-    type Item = MessageResult<Vec<u8>>;
+    type Item = SubscribeStreamItem<<Self as AsyncSubscriber>::Err>;
 
     fn poll_next(
         self: std::pin::Pin<&mut Self>,
