@@ -5,9 +5,7 @@ use nanomsg::Socket;
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 
-pub use nanomsg::Error as MessageError;
-pub use nanomsg::Protocol as NanomsgProtocol;
-pub use nanomsg::Result as MessageResult;
+pub use nanomsg::{Error as MessageError, Protocol as NanomsgProtocol, Result as MessageResult};
 
 use super::Subscribe;
 

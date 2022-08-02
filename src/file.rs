@@ -11,10 +11,8 @@ mod datadir;
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        reader::FileReader,
-        writer::{DataEntry, DataWriter},
-    };
+    use super::reader::FileReader;
+    use super::writer::{DataEntry, DataWriter};
 
     #[tokio::test]
     async fn test_read_write() {

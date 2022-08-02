@@ -1,6 +1,7 @@
 //! The high-performance flags for indicating the state.
 
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 #[derive(Clone)]
 /// The flag storing a binary ([`bool`]) value.

@@ -3,11 +3,9 @@
 
 pub use crypto_market_type::MarketType;
 
-use super::{
-    abstracts::{derive_hsf, derive_interop_converters},
-    bimap::create_bimap,
-    FieldDeserializer, FieldError, FieldSerializer,
-};
+use super::abstracts::{derive_hsf, derive_interop_converters};
+use super::bimap::create_bimap;
+use super::{FieldDeserializer, FieldError, FieldSerializer};
 
 /// The market type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

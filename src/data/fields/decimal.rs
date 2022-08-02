@@ -1,20 +1,15 @@
 //! The module with a field to store numbers serialized with [`crate::data::num`]'s methods.
 //! See [`DecimalField`].
 
-use std::ops::Deref;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
-use rust_decimal::prelude::FromPrimitive;
-use rust_decimal::prelude::ToPrimitive;
-pub use rust_decimal::Decimal;
-pub use rust_decimal::Error as DecimalError;
+use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
+pub use rust_decimal::{Decimal, Error as DecimalError};
 
-use crate::data::num::Decoder;
-use crate::data::num::Encoder;
+use crate::data::num::{Decoder, Encoder};
 
 use super::abstracts::derive_hsf;
-use super::Interopable;
-use super::{FieldDeserializer, FieldError, FieldSerializer};
+use super::{FieldDeserializer, FieldError, FieldSerializer, Interopable};
 
 /// The field to store numbers serialized with [`crate::data::num`]'s methods.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -3,14 +3,12 @@
 pub use crypto_message::TradeMsg;
 use typed_builder::TypedBuilder;
 
-use super::{
-    fields::{
-        EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
-        PriceDataField, SymbolPairField, TimestampField, TradeSideField,
-    },
-    serializer::{
-        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
-    },
+use super::fields::{
+    EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+    PriceDataField, SymbolPairField, TimestampField, TradeSideField,
+};
+use super::serializer::{
+    deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
 };
 
 /// The structure of a trace data.

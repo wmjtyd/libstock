@@ -90,5 +90,4 @@ macro_rules! deserialize_block_builder {
     }}
 }
 
-pub(crate) use deserialize_block_builder;
-pub(crate) use serialize_block_builder;
+pub(crate) use {deserialize_block_builder, serialize_block_builder};

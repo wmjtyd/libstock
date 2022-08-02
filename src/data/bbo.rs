@@ -10,14 +10,12 @@
 pub use crypto_message::BboMsg;
 use typed_builder::TypedBuilder;
 
-use super::{
-    fields::{
-        EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
-        PriceDataField, SymbolPairField, TimestampField,
-    },
-    serializer::{
-        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
-    },
+use super::fields::{
+    EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+    PriceDataField, SymbolPairField, TimestampField,
+};
+use super::serializer::{
+    deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
 };
 
 /// The structure of BBO.

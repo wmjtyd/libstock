@@ -5,10 +5,8 @@ use std::str::FromStr;
 
 use strum::{EnumString, FromRepr};
 
-use super::{
-    abstracts::{derive_hsf, derive_interop_converters},
-    Either, FieldDeserializer, FieldError, FieldResult, FieldSerializer,
-};
+use super::abstracts::{derive_hsf, derive_interop_converters};
+use super::{Either, FieldDeserializer, FieldError, FieldResult, FieldSerializer};
 
 /// The info type (`asks` or `bids`) of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -54,8 +52,7 @@ pub enum InfoType {
 
 #[cfg(test)]
 mod tests {
-    use super::FieldDeserializer;
-    use super::{InfoType, InfoTypeField};
+    use super::{FieldDeserializer, InfoType, InfoTypeField};
 
     #[test]
     fn test_info_type_try_from_str() {

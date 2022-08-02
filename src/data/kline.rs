@@ -4,14 +4,12 @@
 pub use crypto_message::KlineMsg;
 use typed_builder::TypedBuilder;
 
-use super::{
-    fields::{
-        EndOfDataFlag, ExchangeTypeField, FieldError, KlineIndicatorsField, MarketTypeField,
-        MessageTypeField, PeriodField, SymbolPairField, TimestampField,
-    },
-    serializer::{
-        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
-    },
+use super::fields::{
+    EndOfDataFlag, ExchangeTypeField, FieldError, KlineIndicatorsField, MarketTypeField,
+    MessageTypeField, PeriodField, SymbolPairField, TimestampField,
+};
+use super::serializer::{
+    deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
 };
 
 /// The structure of a K-line (also known as Candlestick).

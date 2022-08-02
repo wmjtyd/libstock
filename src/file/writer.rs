@@ -1,13 +1,12 @@
 //! The writer daemon to write data and place file automatically
 //! without worrying about managing the path.
 
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::fmt::Display;
+use std::path::{Path, PathBuf};
 
 use flume::{Receiver, Sender};
-use tokio::{fs::OpenOptions, task::JoinHandle};
+use tokio::fs::OpenOptions;
+use tokio::task::JoinHandle;
 use tracing::Instrument;
 use uuid::Uuid;
 

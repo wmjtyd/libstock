@@ -6,10 +6,8 @@ use std::str::FromStr;
 use either::Either;
 use strum::{EnumString, FromRepr};
 
-use super::{
-    abstracts::{derive_hsf, derive_interop_converters},
-    FieldDeserializer, FieldError, FieldResult, FieldSerializer,
-};
+use super::abstracts::{derive_hsf, derive_interop_converters};
+use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};
 
 /// The exchange type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

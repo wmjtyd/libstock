@@ -3,9 +3,8 @@
 
 pub use crypto_msg_type::MessageType;
 
-use super::{
-    abstracts::derive_interop_converters, Field, FieldDeserializer, FieldError, FieldSerializer,
-};
+use super::abstracts::derive_interop_converters;
+use super::{Field, FieldDeserializer, FieldError, FieldSerializer};
 
 /// The type of a message (1 byte).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

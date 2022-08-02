@@ -4,14 +4,12 @@ pub use crypto_message::FundingRateMsg;
 use rust_decimal::prelude::ToPrimitive;
 use typed_builder::TypedBuilder;
 
-use super::{
-    fields::{
-        DecimalField, EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField,
-        MessageTypeField, SymbolPairField, TimestampField,
-    },
-    serializer::{
-        deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
-    },
+use super::fields::{
+    DecimalField, EndOfDataFlag, ExchangeTypeField, FieldError, MarketTypeField, MessageTypeField,
+    SymbolPairField, TimestampField,
+};
+use super::serializer::{
+    deserialize_block_builder, serialize_block_builder, StructDeserializer, StructSerializer,
 };
 
 pub type FundingRateField = DecimalField<10>;
