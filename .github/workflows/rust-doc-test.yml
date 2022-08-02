@@ -20,6 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Trying to generate docs
-        run: cargo doc
+        run: cargo doc --features zmq/vendored
         env:
           RUSTDOCFLAGS: "-Dwarnings"
