@@ -19,16 +19,14 @@ macro_rules! construct_zeromq {
             }
         }
 
-        impl std::ops::Deref for $name {
-            type Target = zmq2::Socket;
-
-            fn deref(&self) -> &Self::Target {
+        impl AsRef<zmq2::Socket> for $name {
+            fn as_ref(&self) -> &zmq2::Socket {
                 &self.socket
             }
         }
-
-        impl std::ops::DerefMut for $name {
-            fn deref_mut(&mut self) -> &mut Self::Target {
+        
+        impl AsMut<zmq2::Socket> for $name {
+            fn as_mut(&mut self) -> &mut zmq2::Socket {
                 &mut self.socket
             }
         }

@@ -19,16 +19,14 @@ macro_rules! construct_nanomsg {
             }
         }
 
-        impl std::ops::Deref for $name {
-            type Target = nanomsg::Socket;
-
-            fn deref(&self) -> &Self::Target {
+        impl AsRef<nanomsg::Socket> for $name {
+            fn as_ref(&self) -> &nanomsg::Socket {
                 &self.socket
             }
         }
-
-        impl std::ops::DerefMut for $name {
-            fn deref_mut(&mut self) -> &mut Self::Target {
+        
+        impl AsMut<nanomsg::Socket> for $name {
+            fn as_mut(&mut self) -> &mut nanomsg::Socket {
                 &mut self.socket
             }
         }
