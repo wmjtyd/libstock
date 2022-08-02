@@ -150,11 +150,11 @@ Some notable big changes to migrate your codebase:
 #### `message`
 
 Though we reshaped and rewrote all the message modules,
-there is not really big changes for users.
+there are not really big changes for users.
 
 **Migrate `nanomsg` writers**
 
-Assuming you used to have such a code:
+Assuming you used to write this way:
 
 ```rs
 use std::io::Write;
@@ -167,7 +167,7 @@ if let Ok(mut nanomsg) = nanomsg {
 }
 ```
 
-First, update your `Nanomsg` import to `NanomsgPublisher`.
+First, update your `Nanomsg` imports to `NanomsgPublisher`.
 We have separated `Nanomsg` to `NanomsgPublisher` and `NanomsgSubscriber`,
 which implementing the corresponding `Publisher` and `Subscriber`:
 
@@ -176,8 +176,8 @@ use wmjtyd_libstock::message::nanomsg::NanomsgPublisher;
 ```
 
 And then, construct your `NanomsgPublisher`. **Note that no any
-additional parameter will pass it this construction**, and we
-will bind our address later.
+additional parameter need to pass in this construction**. For address,
+we will bind our address in another function later.
 
 ```rs
 let nanomsg = NanomsgPublisher::new();
@@ -245,7 +245,7 @@ if let Ok(mut zeromq) = zeromq {
 **Migrate `nanomsg` readers**
 
 *WIP*. Really similar to what we did in writers.
-Example of this new API:
+Example of this new synchronous API:
 
 ```rs
 use wmjtyd_libstock::message::nanomsg::NanomsgSubscriber;
@@ -266,7 +266,8 @@ if let Ok(mut nanomsg) = nanomsg {
 **Migrate `zeromq` readers**
 
 *WIP*. All of the APIs are followed our new rule and
-thus the logic is just the same. Example of this new API:
+thus the logic is just the same. Example of this new
+asynchronous API:
 
 ```rs
 use wmjtyd_libstock::message::zeromq::ZeromqSubscriber;
