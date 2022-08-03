@@ -1,11 +1,67 @@
 //! A high-level abstracted nanomsg subscriber and
 //! publisher methods with [`nanomsg`].
 //!
+//! - [`NanomsgSubscriber`]: Supports [`SyncSubscriber`](super::traits::SyncSubscriber)
+//!   and [`AsyncSubscriber`](super::traits::SyncSubscriber).
+//! - [`NanomsgPublisher`]: Supports [`SyncSubscriber`](super::traits::SyncSubscriber)
+//!   and [`AsyncSubscriber`](super::traits::SyncSubscriber).
+//!
 //! Note that:
 //!
 //! - We return [`MessageError`](super::MessageError) instead of
 //!   [`NanomsgError`], to maintain the same error
 //!   type as the other implementations.
+//!
+//! # Example
+//!
+//! ```
+//! use std::fmt::Debug;
+//! use wmjtyd_libstock::message::traits::{Bind, Connect, Subscribe, SyncPublisher, SyncSubscriber};
+//!
+//! fn abstract_write_function(mut publisher: impl Bind<Err = impl Debug> + SyncPublisher, addr: &str) {
+//!     publisher.bind(addr).expect("failed to bind");
+//!
+//!     loop {
+//!         publisher
+//!             .write_all(b"TEST Hello, World")
+//!             .expect("failed to write");
+//!         publisher
+//!             .flush()
+//!             .expect("failed to flush")
+//!     }
+//! }
+//!
+//! fn abstract_read_function<S, E>(mut subscriber: S, addr: &str)
+//! where
+//!     E: Debug,
+//!     S: Connect<Err = E> + SyncSubscriber<Err = E> + Subscribe<Err = E>,
+//! {
+//!     subscriber.connect(addr).expect("failed to connect");
+//!     subscriber.subscribe(b"TEST").expect("failed to subscribe");
+//!
+//!     let message = subscriber.next().expect("no data inside");
+//!     assert_eq!(
+//!         message.expect("data receiving failed"),
+//!         b"TEST Hello, World"
+//!     );
+//! }
+//!
+//! fn nanomsg_example() {
+//!     const IPC_ADDR: &str = "ipc:///tmp/libstock-nanomsg-test.ipc";
+//!
+//!     use wmjtyd_libstock::message::nanomsg::{NanomsgPublisher, NanomsgSubscriber};
+//!
+//!     let publisher = NanomsgPublisher::new().expect("failed to create publisher");
+//!     let subscriber = NanomsgSubscriber::new().expect("failed to create subscriber");
+//!
+//!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
+//!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
+//!         .join()
+//!         .unwrap();
+//! }
+//!
+//! nanomsg_example();
+//! ```
 
 mod common;
 mod publisher;

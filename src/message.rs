@@ -2,23 +2,10 @@
 //!
 //! The core concept of this module is *traits*. We abstracted
 //! the subscriber and publisher to the [`Subscriber`](traits::Subscriber)
-//! and [`Publisher`](traits::Publisher) trait.
+//! and [`Publisher`](traits::Publisher) trait. See the submodules
+//! for more information about each implementation.
 //!
-//! We officially supports the following implementation of
-//! subscribers and publishers:
-//!
-//! - [`nanomsg`]: Based on [`::nanomsg`] crate.
-//!   - [`nanomsg::NanomsgSubscriber`]: Supports [`traits::SyncSubscriber`]
-//!     and [`traits::AsyncSubscriber`].
-//!   - [`nanomsg::NanomsgPublisher`]: Supports [`traits::SyncSubscriber`]
-//!     and [`traits::AsyncPublisher`].
-//! - [`zeromq`]: Based on [`zmq2`] crate.
-//!   - [`zeromq::ZeromqSubscriber`]: Supports [`traits::SyncSubscriber`]
-//!     and [`traits::AsyncSubscriber`].
-//!   - [`zeromq::ZeromqPublisher`]: Supports [`traits::SyncSubscriber`]
-//!     and [`traits::AsyncPublisher`].
-//!
-//! # Example
+//! # Example for Abstration
 //!
 //! ```
 //! use std::fmt::Debug;
@@ -51,38 +38,9 @@
 //!         b"TEST Hello, World"
 //!     );
 //! }
-//!
-//! fn nanomsg_example() {
-//!     const IPC_ADDR: &str = "ipc:///tmp/libstock-nanomsg-test.ipc";
-//!
-//!     use wmjtyd_libstock::message::nanomsg::{NanomsgPublisher, NanomsgSubscriber};
-//!
-//!     let publisher = NanomsgPublisher::new().expect("failed to create publisher");
-//!     let subscriber = NanomsgSubscriber::new().expect("failed to create subscriber");
-//!
-//!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
-//!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
-//!         .join()
-//!         .unwrap();
-//! }
-//!
-//! fn zeromq_example() {
-//!     const IPC_ADDR: &str = "ipc:///tmp/libstock-zeromq-test.ipc";
-//!
-//!     use wmjtyd_libstock::message::zeromq::{ZeromqPublisher, ZeromqSubscriber};
-//!
-//!     let publisher = ZeromqPublisher::new().expect("failed to create publisher");
-//!     let subscriber = ZeromqSubscriber::new().expect("failed to create subscriber");
-//!
-//!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
-//!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
-//!         .join()
-//!         .unwrap();
-//! }
-//!
-//! nanomsg_example();
-//! zeromq_example();
 //! ```
+//!
+//! For more examples, see the respective modules.
 
 pub mod traits;
 

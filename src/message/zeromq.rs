@@ -1,11 +1,83 @@
 //! A high-level abstracted ZeroMQ subscriber and
 //! publisher methods with [`zmq2`].
 //!
+//! - [`ZeromqSubscriber`]: Supports [`SyncSubscriber`](super::traits::SyncSubscriber)
+//!   and [`AsyncSubscriber`](super::traits::SyncSubscriber).
+//! - [`ZeromqPublisher`]: Supports [`SyncSubscriber`](super::traits::SyncSubscriber)
+//!   and [`AsyncSubscriber`](super::traits::SyncSubscriber).
+//!
 //! Note that:
 //!
 //! - We return [`MessageError`](super::MessageError) instead of
 //!   [`ZeromqError`], to maintain the same error
 //!   type as the other implementations.
+//!
+//! # Example
+//!
+//! ## Direct Example
+//!
+//! ```
+//! use wmjtyd_libstock::message::traits::{Write, Bind};
+//! use wmjtyd_libstock::message::zeromq::ZeromqPublisher;
+//!
+//! let zeromq = ZeromqPublisher::new();
+//!
+//! if let Ok(mut zeromq) = zeromq {
+//!     zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w-a.ipc").ok();
+//!     zeromq.write_all(b"Hello World!").ok();
+//! }
+//! ```
+//!
+//! ## Abstract Example
+//!
+//! ```
+//! use std::fmt::Debug;
+//! use wmjtyd_libstock::message::traits::{Bind, Connect, Subscribe, SyncPublisher, SyncSubscriber};
+//!
+//! fn abstract_write_function(mut publisher: impl Bind<Err = impl Debug> + SyncPublisher, addr: &str) {
+//!     publisher.bind(addr).expect("failed to bind");
+//!
+//!     loop {
+//!         publisher
+//!             .write_all(b"TEST Hello, World")
+//!             .expect("failed to write");
+//!         publisher
+//!             .flush()
+//!             .expect("failed to flush")
+//!     }
+//! }
+//!
+//! fn abstract_read_function<S, E>(mut subscriber: S, addr: &str)
+//! where
+//!     E: Debug,
+//!     S: Connect<Err = E> + SyncSubscriber<Err = E> + Subscribe<Err = E>,
+//! {
+//!     subscriber.connect(addr).expect("failed to connect");
+//!     subscriber.subscribe(b"TEST").expect("failed to subscribe");
+//!
+//!     let message = subscriber.next().expect("no data inside");
+//!     assert_eq!(
+//!         message.expect("data receiving failed"),
+//!         b"TEST Hello, World"
+//!     );
+//! }
+//!
+//! fn zeromq_example() {
+//!     const IPC_ADDR: &str = "ipc:///tmp/libstock-zeromq-test.ipc";
+//!
+//!     use wmjtyd_libstock::message::zeromq::{ZeromqPublisher, ZeromqSubscriber};
+//!
+//!     let publisher = ZeromqPublisher::new().expect("failed to create publisher");
+//!     let subscriber = ZeromqSubscriber::new().expect("failed to create subscriber");
+//!
+//!     std::thread::spawn(move || abstract_write_function(publisher, IPC_ADDR));
+//!     std::thread::spawn(move || abstract_read_function(subscriber, IPC_ADDR))
+//!         .join()
+//!         .unwrap();
+//! }
+//!
+//! zeromq_example();
+//! ```
 
 mod common;
 mod publisher;
