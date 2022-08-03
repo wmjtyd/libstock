@@ -92,18 +92,15 @@ pub mod nanomsg;
 #[cfg(feature = "zeromq")]
 pub mod zeromq;
 
-use std::fmt::Debug;
-
-use self::nanomsg::NanomsgError;
-use self::zeromq::ZeromqError;
-
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, std::fmt::Debug)]
 pub enum MessageError {
+    #[cfg(feature = "nanomsg")]
     #[error("Nanomsg error: {0}")]
-    NanomsgError(#[from] NanomsgError),
+    NanomsgError(#[from] self::nanomsg::NanomsgError),
 
+    #[cfg(feature = "zeromq")]
     #[error("ZeroMQ error: {0}")]
-    ZeromqError(#[from] ZeromqError),
+    ZeromqError(#[from] self::zeromq::ZeromqError),
 }
 
 pub type MessageResult<T> = Result<T, MessageError>;
