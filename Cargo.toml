@@ -58,7 +58,7 @@ default = ["crypto", "message", "slack"]
 crypto = ["dep:crypto-msg-type", "dep:crypto-market-type", "dep:crypto-message"]
 message = ["nanomsg", "zeromq"]
 nanomsg = ["dep:nanomsg"]
-zeromq = ["zmq2"]
+zeromq = ["dep:zmq2"]
 slack = ["dep:slack-hook"]
 
 # <!> Will be removed in the future release!
