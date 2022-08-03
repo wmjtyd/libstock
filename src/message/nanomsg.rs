@@ -90,7 +90,9 @@ mod tests {
             let nanomsg = NanomsgPublisher::new();
 
             if let Ok(mut nanomsg) = nanomsg {
-                nanomsg.bind("ipc:///tmp/cl-nanomsg_migrate_to_new_api_write.ipc").ok();
+                nanomsg
+                    .bind("ipc:///tmp/cl-nanomsg_migrate_to_new_api_write.ipc")
+                    .ok();
                 nanomsg.write_all(b"Hello World!").ok();
             }
         }
@@ -103,7 +105,9 @@ mod tests {
             let nanomsg = NanomsgPublisher::new();
 
             if let Ok(mut nanomsg) = nanomsg {
-                nanomsg.bind("ipc:///tmp/cl-nanomsg_migrate_to_new_api_write_async.ipc").ok();
+                nanomsg
+                    .bind("ipc:///tmp/cl-nanomsg_migrate_to_new_api_write_async.ipc")
+                    .ok();
                 nanomsg.write_all(b"Hello World!").await.ok();
             }
         }
@@ -118,7 +122,9 @@ mod tests {
                 let nanomsg = NanomsgPublisher::new();
 
                 if let Ok(mut nanomsg) = nanomsg {
-                    nanomsg.bind("ipc:///tmp/cl-nanomsg_new_read_example.ipc").ok();
+                    nanomsg
+                        .bind("ipc:///tmp/cl-nanomsg_new_read_example.ipc")
+                        .ok();
 
                     loop {
                         nanomsg.write_all(b"Hello World!").ok();
@@ -133,7 +139,9 @@ mod tests {
             let nanomsg = NanomsgSubscriber::new();
 
             if let Ok(mut nanomsg) = nanomsg {
-                nanomsg.connect("ipc:///tmp/cl-nanomsg_new_read_example.ipc").ok();
+                nanomsg
+                    .connect("ipc:///tmp/cl-nanomsg_new_read_example.ipc")
+                    .ok();
                 nanomsg.subscribe(b"").ok();
 
                 let mut buf = [0; 12];
@@ -152,7 +160,9 @@ mod tests {
                 let nanomsg = NanomsgPublisher::new();
 
                 if let Ok(mut nanomsg) = nanomsg {
-                    nanomsg.bind("ipc:///tmp/cl-nanomsg-new_read_async_example.ipc").ok();
+                    nanomsg
+                        .bind("ipc:///tmp/cl-nanomsg-new_read_async_example.ipc")
+                        .ok();
 
                     loop {
                         nanomsg.write_all(b"Hello World!").ok();
@@ -167,7 +177,9 @@ mod tests {
             let nanomsg = NanomsgSubscriber::new();
 
             if let Ok(mut nanomsg) = nanomsg {
-                nanomsg.connect("ipc:///tmp/cl-nanomsg-new_read_async_example.ipc").ok();
+                nanomsg
+                    .connect("ipc:///tmp/cl-nanomsg-new_read_async_example.ipc")
+                    .ok();
                 nanomsg.subscribe(b"").ok();
 
                 let mut buf = [0; 12];

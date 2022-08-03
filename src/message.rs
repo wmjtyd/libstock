@@ -279,6 +279,7 @@ mod tests {
         };
     }
 
+    #[cfg(feature = "nanomsg")]
     mod nanomsg {
         use super::super::nanomsg::{NanomsgPublisher, NanomsgSubscriber};
         use super::*;
@@ -316,6 +317,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "zeromq")]
     mod zeromq {
         use super::super::zeromq::{ZeromqPublisher, ZeromqSubscriber};
         use super::*;
