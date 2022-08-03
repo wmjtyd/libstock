@@ -2,7 +2,7 @@
 
 pub use std::io::{Read, Write};
 
-pub use futures::Stream;
+pub use futures::{Stream, StreamExt};
 pub use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// The trait for implementing the subscriber of a topic.
