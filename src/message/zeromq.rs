@@ -72,7 +72,7 @@ mod tests {
             let zeromq = ZeromqPublisher::new();
 
             if let Ok(mut zeromq) = zeromq {
-                zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w.ipc").ok();
+                zeromq.bind("ipc:///tmp/cl-zeromq_migrate_to_new_api_write.ipc").ok();
                 zeromq.write_all(b"Hello World!").ok();
             }
         }
@@ -85,7 +85,7 @@ mod tests {
             let zeromq = ZeromqPublisher::new();
 
             if let Ok(mut zeromq) = zeromq {
-                zeromq.bind("ipc:///tmp/cl-zeromq-new-api-w-a.ipc").ok();
+                zeromq.bind("ipc:///tmp/cl-zeromq_migrate_to_new_api_write_async.ipc").ok();
                 zeromq.write_all(b"Hello World!").await.ok();
             }
         }
@@ -100,7 +100,7 @@ mod tests {
                 let zeromq = ZeromqPublisher::new();
 
                 if let Ok(mut zeromq) = zeromq {
-                    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                    zeromq.bind("ipc:///tmp/cl-zeromq_new_read_example.ipc").ok();
                     loop {
                         zeromq.write_all(b"Hello World!").ok();
                     }
@@ -114,7 +114,7 @@ mod tests {
             let zeromq = ZeromqSubscriber::new();
 
             if let Ok(mut zeromq) = zeromq {
-                zeromq.connect("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                zeromq.connect("ipc:///tmp/cl-zeromq_new_read_example.ipc").ok();
                 zeromq.subscribe(b"").ok();
 
                 let mut buf = [0; 12];
@@ -133,7 +133,7 @@ mod tests {
                 let zeromq = ZeromqPublisher::new();
 
                 if let Ok(mut zeromq) = zeromq {
-                    zeromq.bind("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                    zeromq.bind("ipc:///tmp/cl-zeromq_new_read_async_example.ipc").ok();
                     loop {
                         zeromq.write_all(b"Hello World!").ok();
                     }
@@ -147,7 +147,7 @@ mod tests {
             let zeromq = ZeromqSubscriber::new();
 
             if let Ok(mut zeromq) = zeromq {
-                zeromq.connect("ipc:///tmp/cl-zeromq-new-api-r.ipc").ok();
+                zeromq.connect("ipc:///tmp/cl-zeromq_new_read_async_example.ipc").ok();
                 zeromq.subscribe(b"").ok();
 
                 let mut buf = [0; 12];
