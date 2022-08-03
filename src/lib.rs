@@ -8,7 +8,8 @@
 //!   and create a daemon to write files with the well-defined format
 //!   to the well-defined directory.
 //! - Using methods under [`mod@flag`] to use thread-safe, lock-free flags.
-//! - Using methods under [`mod@slack`] to send notifications to Slack with Slack Hook.
+//! - Using methods under `slack` module to send notifications to Slack with Slack Hook
+//!   (required to enable `slack` feature, which is enabled by default)
 //! - Using methods under [`mod@message`] to subscribe and publish based on Nanomsg or Zeromq.
 //!
 //! ## License
