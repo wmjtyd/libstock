@@ -1,12 +1,12 @@
-name: Compile & Test libstock
+name: Test documenting libstock
 
-concurrency:
+concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
   pull_request:
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ jobs:
     outputs:
       feature: ${{ steps.set-matrix.outputs.feature }}
 
-  build:
+  doccheck:
     needs: build-matrix
     runs-on: ubuntu-latest
 
@@ -36,19 +36,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: taiki-e/install-action@nextest
-      - name: Install nanomsg
-        run: bash scripts/ci_install_nanomsg.sh
-      - name: Build
+      - name: Trying to generate docs
         run: |
           for f in ${{ matrix.features }}; do
-            echo -e "\ninfo: building with $f"
-            cargo build --no-default-features --verbose -F "$f" || exit 1
+            echo -e "\ninfo: doccheck with $f"
+            cargo doc --no-deps --no-default-features -F "$f"
           done
-      - name: Run tests
-        run: |
-          for f in ${{ matrix.features }}; do
-            echo -e "\ninfo: testing with $f"
-            cargo nextest run --no-default-features --verbose -F "$f" || exit 2
-            cargo test --doc --no-default-features --verbose -F "$f" || exit 3
-          done
+        env:
+          RUSTDOCFLAGS: "-Dwarnings"

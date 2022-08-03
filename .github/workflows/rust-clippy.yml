@@ -1,12 +1,12 @@
 name: Run cargo clippy on codebase
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
   workflow_dispatch:
 
@@ -14,10 +14,31 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-matrix:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: set-matrix
+        run: |
+          feature="$(python3 scripts/list_all_possible_features.py)"
+          echo "::set-output name=feature::$feature"
+    outputs:
+      feature: ${{ steps.set-matrix.outputs.feature }}
+
+  clippy:
+    needs: build-matrix
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        features: ${{ fromJson(needs.build-matrix.outputs.feature) }}
 
     steps:
       - uses: actions/checkout@v3
-      - name: Check formatting
-        run: cargo clippy
+      - name: Check coding style
+        run: |
+          for f in ${{ matrix.features }}; do
+            echo -e "\ninfo: checking with $f"
+            cargo clippy --no-deps --no-default-features -F "$f"
+          done
