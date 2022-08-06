@@ -16,12 +16,12 @@ homepage = "https://github.com/wmjtyd/libstock"
 [dependencies]
 arrayref = "0.3.6"
 bimap = "0.6.2"
-chrono = "0.4.19"
+chrono = "0.4.20"
 concat-string = "1.0.1"
 either = "1.7.0"
 flume = "0.10.14"
 once_cell = "1.13.0"
-rust_decimal = "1.25.0"
+rust_decimal = "1.26.1"
 strum = { version = "0.24.1", features = ["derive"] }
 thiserror = "1.0.32"
 tokio = { version = "1.20.1", features = ["fs", "io-util", "rt"] }
@@ -67,8 +67,8 @@ compat-v0_3 = []
 [dev-dependencies]
 tracing-subscriber = "0.3.15"
 tokio = { version = "1.20.1", features = ["time", "rt", "rt-multi-thread", "macros"] }
-anyhow = "1.0.60"
-rust_decimal_macros = "1.25.0"
+anyhow = "1.0.59"
+rust_decimal_macros = "1.26.1"
 criterion = "0.3.6"
 
 [[bench]]
