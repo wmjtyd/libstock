@@ -50,9 +50,11 @@ fn get_ob_structure() -> OrderbookStructure {
                 .orders(
                     iter::repeat(
                         PriceDataField::builder()
-                        .price(Decimal::from_str_exact(black_box("12345.12345")).unwrap())
-                        .quantity_base(Decimal::from_str_exact(black_box("56789.87654")).unwrap())
-                        .build(),
+                            .price(Decimal::from_str_exact(black_box("12345.12345")).unwrap())
+                            .quantity_base(
+                                Decimal::from_str_exact(black_box("56789.87654")).unwrap(),
+                            )
+                            .build(),
                     )
                     .take(25)
                     .collect(),

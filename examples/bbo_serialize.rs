@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 
 use crypto_market_type::MarketType;
 use crypto_msg_type::MessageType;
@@ -7,7 +7,7 @@ use rust_decimal::Decimal;
 use wmjtyd_libstock::data::bbo::BboStructure;
 use wmjtyd_libstock::data::fields::exchange_type::Exchange;
 use wmjtyd_libstock::data::fields::{PriceDataField, SymbolPairField};
-use wmjtyd_libstock::data::serializer::{StructSerializer, StructDeserializer};
+use wmjtyd_libstock::data::serializer::{StructDeserializer, StructSerializer};
 
 fn main() {
     let bbo_structure = BboStructure::builder()
@@ -34,7 +34,7 @@ fn main() {
     bbo_structure.serialize(&mut f).unwrap();
     f.flush().unwrap();
     drop(f);
-    
+
     let mut f = File::open("bbo_serialized.bin").unwrap();
     let mut serialized = Vec::new();
     f.read_to_end(&mut serialized).unwrap();

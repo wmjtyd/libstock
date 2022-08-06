@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 use std::iter;
 
 use crypto_market_type::MarketType;
@@ -9,7 +9,7 @@ use wmjtyd_libstock::data::fields::exchange_type::Exchange;
 use wmjtyd_libstock::data::fields::info_type::InfoType;
 use wmjtyd_libstock::data::fields::{PriceDataField, SymbolPairField};
 use wmjtyd_libstock::data::orderbook::{OrderbookStructure, OrdersBox};
-use wmjtyd_libstock::data::serializer::{StructSerializer, StructDeserializer};
+use wmjtyd_libstock::data::serializer::{StructDeserializer, StructSerializer};
 
 fn main() {
     let orderbook_structure = OrderbookStructure::builder()
@@ -39,9 +39,9 @@ fn main() {
                 .orders(
                     iter::repeat(
                         PriceDataField::builder()
-                        .price(Decimal::from_str_exact("12345.12345").unwrap())
-                        .quantity_base(Decimal::from_str_exact("56789.87654").unwrap())
-                        .build(),
+                            .price(Decimal::from_str_exact("12345.12345").unwrap())
+                            .quantity_base(Decimal::from_str_exact("56789.87654").unwrap())
+                            .build(),
                     )
                     .take(25)
                     .collect(),
@@ -54,7 +54,7 @@ fn main() {
     orderbook_structure.serialize(&mut f).unwrap();
     f.flush().unwrap();
     drop(f);
-    
+
     let mut f = File::open("orderbook_serialized.bin").unwrap();
     let mut serialized = Vec::new();
     f.read_to_end(&mut serialized).unwrap();
