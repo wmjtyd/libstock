@@ -78,3 +78,11 @@ harness = false
 [[bench]]
 name = "orderbook_ser_des"
 harness = false
+
+[[example]]
+name = "bbo_serialize"
+required-features = ["crypto"]
+
+[[example]]
+name = "orderbook_serialize"
+required-features = ["crypto"]
