@@ -39,7 +39,7 @@ macro_rules! i8_encoder {
 macro_rules! u8_encoder_body {
     ($self:expr, $abs_to:ty) => {{
         let is_negative = $self.is_sign_negative();
-        let num_part = $self.mantissa().unsigned_abs() as $abs_to;
+        let num_part = <$abs_to>::try_from($self.mantissa().unsigned_abs()).expect("overflow!");
         let scale_part = $self.scale() as u8;
 
         let num_bytes = num_part.to_be_bytes();
