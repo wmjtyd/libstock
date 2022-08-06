@@ -11,42 +11,42 @@ use super::{DecimalField, Field, FieldDeserializer, FieldError, FieldSerializer}
 /// The price data (10 bytes).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypedBuilder)]
 pub struct PriceDataField {
-    /// 價格 (5 bytes)
+    /// 價格 (10 bytes)
     ///
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
     #[builder(setter(into))]
-    pub price: DecimalField<5>,
+    pub price: DecimalField<10>,
 
-    /// 基本量 (5 bytes)
+    /// 基本量 (10 bytes)
     ///
     /// NOTE: crypto-crawler 是用浮點數儲存價格的。
     /// 這可能造成非常嚴重的誤差（0.1+0.2=0.300000004），
     /// 因此是 Bug，遲早要改成 String。
     #[builder(setter(into))]
-    pub quantity_base: DecimalField<5>,
+    pub quantity_base: DecimalField<10>,
 }
 
-impl FieldSerializer<10> for PriceDataField {
+impl FieldSerializer<20> for PriceDataField {
     type Err = FieldError;
 
-    fn serialize(&self) -> Result<[u8; 10], Self::Err> {
-        let mut bytes = [0; 10];
+    fn serialize(&self) -> Result<[u8; 20], Self::Err> {
+        let mut bytes = [0; 20];
 
-        bytes[..5].copy_from_slice(&self.price.serialize()?);
-        bytes[5..].copy_from_slice(&self.quantity_base.serialize()?);
+        bytes[..10].copy_from_slice(&self.price.serialize()?);
+        bytes[10..].copy_from_slice(&self.quantity_base.serialize()?);
 
         Ok(bytes)
     }
 }
 
-impl FieldDeserializer<10> for PriceDataField {
+impl FieldDeserializer<20> for PriceDataField {
     type Err = FieldError;
 
-    fn deserialize(src: &[u8; 10]) -> Result<Self, Self::Err> {
-        let price = arrayref::array_ref![src, 0, 5];
-        let quantity_base = arrayref::array_ref![src, 5, 5];
+    fn deserialize(src: &[u8; 20]) -> Result<Self, Self::Err> {
+        let price = arrayref::array_ref![src, 0, 10];
+        let quantity_base = arrayref::array_ref![src, 10, 10];
 
         Ok(Self {
             price: DecimalField::deserialize(price)?,
@@ -79,4 +79,4 @@ impl TryFrom<&Order> for PriceDataField {
     }
 }
 
-impl Field<10> for PriceDataField {}
+impl Field<20> for PriceDataField {}
