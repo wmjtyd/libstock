@@ -60,14 +60,7 @@ impl Iterator for NanomsgSubscriber {
     fn next(&mut self) -> Option<Self::Item> {
         // The buffer can place at most 4096 bytes (4KB) of data.
         // It is enough for our finance data.
-        let mut buf = {
-            // SAFETY: The array will be initiated when reading to it.
-            // Besides, [u8; 4096] should not be a big deal.
-            #[allow(clippy::uninit_assumed_init)]
-            unsafe {
-                std::mem::MaybeUninit::<[u8; 4096]>::uninit().assume_init()
-            }
-        };
+        let mut buf = [0; 4096];
         let result = self.read(&mut buf).map_err(NanomsgError::ReadFailed);
 
         match result {
