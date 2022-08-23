@@ -69,3 +69,7 @@ required-features = ["crypto"]
 [[example]]
 name = "orderbook_serialize"
 required-features = ["crypto"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
