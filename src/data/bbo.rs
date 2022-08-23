@@ -178,7 +178,6 @@ mod tests {
     use super::BboStructure;
     use crate::data::serializer::{StructDeserializer, StructSerializer};
 
-    // FIXME: add Clone, PartialEq, Eq, Debug, Hash... to crypto-crawler-rs.
     fn construct_bbomsg(unknown_market_type: bool) -> BboMsg {
         BboMsg {
             exchange: "crypto".into(),

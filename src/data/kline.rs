@@ -1,8 +1,10 @@
 //! The kline-related operations.
 
-// TODO: change to CandlestickMsg
-pub use crypto_message::KlineMsg;
+pub use crypto_message::CandlestickMsg;
 use typed_builder::TypedBuilder;
+
+// FIXME: Rename to CandlestickMsg later.
+pub type KlineMsg = self::CandlestickMsg;
 
 use super::fields::{
     EndOfDataFlag,
@@ -100,10 +102,10 @@ impl StructDeserializer for KlineStructure {
     }
 }
 
-impl TryFrom<&KlineMsg> for KlineStructure {
+impl TryFrom<&CandlestickMsg> for KlineStructure {
     type Error = KlineError;
 
-    fn try_from(value: &KlineMsg) -> Result<Self, Self::Error> {
+    fn try_from(value: &CandlestickMsg) -> Result<Self, Self::Error> {
         Ok(Self::builder()
             .exchange_timestamp(value.timestamp)
             .exchange_type(ExchangeTypeField::try_from_str(&value.exchange)?)
@@ -124,7 +126,7 @@ impl TryFrom<&KlineMsg> for KlineStructure {
     }
 }
 
-impl TryFrom<KlineStructure> for KlineMsg {
+impl TryFrom<KlineStructure> for CandlestickMsg {
     type Error = KlineError;
 
     fn try_from(value: KlineStructure) -> Result<Self, Self::Error> {
@@ -145,6 +147,8 @@ impl TryFrom<KlineStructure> for KlineMsg {
             volume: value.indicator.volume.try_into()?,
             period: value.period.into(),
             quote_volume: None,
+            // FIXME: begin_time
+            begin_time: Default::default(),
         })
     }
 }
@@ -164,7 +168,7 @@ pub type KlineResult<T> = Result<T, KlineError>;
 crate::compat::compat_enc!(
     enc = encode_kline,
     dec = decode_kline,
-    crawl = KlineMsg,
+    crawl = CandlestickMsg,
     result = KlineResult,
     structure = KlineStructure
 );
