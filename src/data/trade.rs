@@ -47,7 +47,7 @@ pub struct TradeStructure {
     #[builder(setter(into))]
     pub message_type: MessageTypeField,
 
-    /// SYMBOL
+    /// Symbol (ID，`1`) 或 Pair（字串，`BTC/USDT`）
     pub symbol: SymbolPairField,
 
     /// 交易方向 (Trade side)

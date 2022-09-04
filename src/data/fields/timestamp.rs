@@ -8,6 +8,9 @@ use super::{FieldDeserializer, FieldError, FieldResult, FieldSerializer};
 use crate::data::num::{six_byte_hex_to_unix_ms, unix_ms_to_six_byte_hex};
 
 /// The general timestamp field (6 bytes).
+/// 
+/// The stored timestamp is in `ms`, which is a 13 digit numbers.
+/// Example: `1662300000000`
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TimestampField(pub u64);
 
