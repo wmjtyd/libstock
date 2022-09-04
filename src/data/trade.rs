@@ -57,7 +57,7 @@ pub struct TradeStructure {
     pub trade_side: TradeSideField,
 
     /// 交易價格資訊
-    pub trace_price: PriceDataField,
+    pub trade_price: PriceDataField,
 
     /// 資料結尾
     #[builder(default)]
@@ -76,7 +76,7 @@ impl StructSerializer for TradeStructure {
             self.message_type,
             self.symbol,
             self.trade_side,
-            self.trace_price,
+            self.trade_price,
             self.end
             => writer
         );
@@ -98,7 +98,7 @@ impl StructDeserializer for TradeStructure {
             message_type,
             symbol,
             trade_side,
-            trace_price,
+            trade_price,
             end
         )
     }
@@ -115,7 +115,7 @@ impl TryFrom<&TradeMsg> for TradeStructure {
             .message_type(msg.msg_type)
             .symbol(SymbolPairField::from_pair(&msg.pair))
             .trade_side(msg.side)
-            .trace_price(
+            .trade_price(
                 PriceDataField::builder()
                     .price(msg.price)
                     .quantity_base(msg.quantity_base)
@@ -139,8 +139,8 @@ impl TryFrom<TradeStructure> for TradeMsg {
             symbol: symbol.to_string(),
             timestamp: value.exchange_timestamp.into(),
             side: value.trade_side.into(),
-            price: value.trace_price.price.try_into()?,
-            quantity_base: value.trace_price.quantity_base.try_into()?,
+            price: value.trade_price.price.try_into()?,
+            quantity_base: value.trade_price.quantity_base.try_into()?,
             quantity_quote: 0.0,
             quantity_contract: None,
             trade_id: String::new(),
