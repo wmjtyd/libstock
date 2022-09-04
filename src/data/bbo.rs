@@ -53,7 +53,7 @@ pub struct BboStructure {
     #[builder(setter(into))]
     pub message_type: MessageTypeField,
 
-    /// SYMBOL
+    /// Symbol (ID，`1`) 或 Pair（字串，`BTC/USDT`）
     pub symbol: SymbolPairField,
 
     /// 最優賣出報價資訊 (asks)
